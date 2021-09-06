@@ -6,12 +6,13 @@ classdef controller
          kW = 1*eye(3);
          %% adaptive
          theta = [0;0;0];
-         gamma = 0.0005;
+%          gamma = 0.0005;
+         gamma = 0;
          c2 = 1
         %% ICL
         integral_times_discrete ;
-        k_icl;
-        N = 10;
+        k_icl = 0.00000001;
+        N = 1;
         y_i;
         
         y;
@@ -21,8 +22,11 @@ classdef controller
         Y_array;
         Y_omega_array;
         M_array;
+        W_array;
 
-        sigma;
+        sigma_y_array;
+        sigma_y_omega_array;
+        sigma_M_hat_array;
          
         end
    methods
@@ -66,26 +70,60 @@ classdef controller
                     obj.theta(3) = 0;
                     disp("theta")
                     disp(obj.theta);
-                
+                    
+                    obj.theta = obj.theta + theta_hat_dot ;
+                    obj.theta(3) = 0;
+                    disp("theta")
+                    disp(obj.theta);
                 elseif type == "ICL"
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - obj.theta*f;
-                    theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR);
-                    obj.theta = obj.theta + theta_hat_dot;
-                    obj.theta(3) = 0;
                     
-                    obj.y = obj.y + f - obj.Y_array(1);
-                    obj.y_omega = obj.y_omega - control.Y_omega_array(:,1);
-                    obj.M_hat = obj.M_hat + M -obj.M_array(:,1);
+                    
+                    Y_omega = [                        0 , -W_now(2,1)*W_now(3,1) ,  W_now(2,1)*W_now(3,1) ;
+                                   W_now(1,1)*W_now(3,1) ,                      0 , -W_now(1,1)*W_now(3,1) ;
+                                  -W_now(1,1)*W_now(2,1) ,  W_now(1,1)*W_now(2,1) ,                      0 ;];
+                        
+                    Y_omega_J = Y_omega*[uav.J(1,1);uav.J(2,2);uav.J(3,3)];
+                    obj.y       = obj.y + f - obj.Y_array(1);
+                    obj.y_omega = obj.y_omega + Y_omega_J - obj.Y_omega_array(:,1) + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
+                    obj.M_hat   = obj.M_hat + M -obj.M_array(:,1);
+
                     
                     for i= 1:obj.integral_times_discrete-1
                         obj.Y_array(i) = obj.Y_array(i+1);
                         obj.Y_omega_array(i) = obj.Y_omega_array(i+1);
                         obj.M_array(i) = obj.M_array(i+1);
+                        obj.W_array(i) = obj.W_array(i+1);
                     end
+                    obj.Y_array(obj.integral_times_discrete)         = f;
+                    obj.Y_omega_array(:,obj.integral_times_discrete) = Y_omega_J;
+                    obj.M_array(:,obj.integral_times_discrete)       = M;
+                    obj.W_array(:,obj.integral_times_discrete)       = W_now;
+                    
+                    x = zeros(3,1);
                     if iteration > obj.integral_times_discrete
+                        for i= 1:obj.N-1
+                            obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
+                            obj.sigma_y_omega_array(:,i) = obj.sigma_y_omega_array(:,i+1);
+                            obj.sigma_y_array(i) = obj.sigma_y_array(i+1);
+                        end
+                        
+                        obj.sigma_M_hat_array(:,obj.N) = obj.M_hat;
+                        obj.sigma_y_omega_array(:,obj.N) = obj.y_omega;
+                        obj.sigma_y_array(obj.N) = obj.y;
+                        for i=1:obj.N
+                                x = x + obj.sigma_y_array(i)*(obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta);
+                        end
+                        disp("x");
+                        disp(x);
+                        theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR) + obj.k_icl * x;
+
                     
+                    else
+                        theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR);
                     end
-                    
+                    obj.theta = obj.theta + theta_hat_dot ;
+                    obj.theta(3) = 0;
                     disp("theta")
                     disp(obj.theta);
                 end

@@ -5,7 +5,7 @@ addpath('geometry-toolbox')
 %% set drone parameters
 % simulation time
 dt = 1/400;
-sim_t = 20;
+sim_t = 10;
 
 uav = drone_dynamic;
 uav.dt = dt;            %delta t
@@ -47,8 +47,8 @@ uav.W(:, 1) = [0; 0; 0];
 %% create controller
 control = controller;
 integral_time = 0.05;
-control.integral_times_discrete = integral_time/uav.sim_t;
-
+control.integral_times_discrete = integral_time/uav.dt;
+disp(control.integral_times_discrete);
 control.y = 0;
 control.y_omega = zeros(3,1);
 control.M_hat = zeros(3,1);
@@ -56,6 +56,11 @@ control.M_hat = zeros(3,1);
 control.Y_array = zeros(1,control.integral_times_discrete);
 control.Y_omega_array = zeros(3,control.integral_times_discrete);
 control.M_array = zeros(3,control.integral_times_discrete);
+control.W_array = zeros(3,control.integral_times_discrete);
+
+control.sigma_M_hat_array = zeros(3,control.N);
+control.sigma_y_omega_array = zeros(3,control.N);
+control.sigma_y_array = zeros(control.N);
 
 disp("integral times")
 disp(control.integral_times_discrete)
@@ -73,7 +78,7 @@ traj = trajectory;
 %          -uav.d*cos_45, uav.d*cos_45, uav.d*cos_45, -uav.d*cos_45;
 %           uav.d*cos_45 -0.05, uav.d*cos_45 -0.05,-uav.d*cos_45 +0.05, -uav.d*cos_45 +0.05;
 %          -uav.c_tau, uav.c_tau, -uav.c_tau, uav.c_tau];
-       uav.pc_2_mc = [0.05;0.05;0]; %pose center to mass center
+       uav.pc_2_mc = [0.05;0.01;0]; %pose center to mass center
        uav_l = uav.d*cos_45;
        pc_2_r = [  uav_l - uav.pc_2_mc(1),   uav_l - uav.pc_2_mc(1), -(uav_l + uav.pc_2_mc(1)), -(uav_l + uav.pc_2_mc(1));
                    uav_l - uav.pc_2_mc(2),-(uav_l + uav.pc_2_mc(2)), -(uav_l + uav.pc_2_mc(2)),     uav_l- uav.pc_2_mc(2);
@@ -81,7 +86,7 @@ traj = trajectory;
        disp(pc_2_r(:,1));
 %% start iteration
 
-traj_type = "circle";   %"circle","position"
+traj_type = "position";   %"circle","position"
 controller_type = "ICL";   %"origin","EMK","adaptive"
 
 for i = 2:length(uav.t)

@@ -19,8 +19,7 @@ classdef trajectory
            desired_acceleration(2) = -sin(1*t);
            desired_acceleration(3) = 0;
 %            % b1d
-            desired_b1 = [1;0;0];
-           
+            desired_b1 = [1;0;0];          
 %% fix pose
         elseif type == "position"
             desired_pose = zeros(3,1);
