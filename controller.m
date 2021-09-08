@@ -6,13 +6,13 @@ classdef controller
          kW = 1*eye(3);
          %% adaptive
          theta = [0;0;0];
-%          gamma = 0.0005;
-         gamma = 0;
+         gamma = 0.0005;
+%         gamma = 0;
          c2 = 1
         %% ICL
         integral_times_discrete ;
-        k_icl = 0.00000001;
-        N = 1;
+        k_icl = 0.0001;
+        N = 20;
         y_i;
         
         y;
@@ -76,8 +76,11 @@ classdef controller
                     disp("theta")
                     disp(obj.theta);
                 elseif type == "ICL"
+                    disp("obj.integral_times_discrete");
+                    disp(obj.integral_times_discrete);
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - obj.theta*f;
-                    
+                    disp("M");
+                    disp(M);
                     
                     Y_omega = [                        0 , -W_now(2,1)*W_now(3,1) ,  W_now(2,1)*W_now(3,1) ;
                                    W_now(1,1)*W_now(3,1) ,                      0 , -W_now(1,1)*W_now(3,1) ;
@@ -91,16 +94,22 @@ classdef controller
                     
                     for i= 1:obj.integral_times_discrete-1
                         obj.Y_array(i) = obj.Y_array(i+1);
-                        obj.Y_omega_array(i) = obj.Y_omega_array(i+1);
-                        obj.M_array(i) = obj.M_array(i+1);
-                        obj.W_array(i) = obj.W_array(i+1);
+                        obj.Y_omega_array(:,i) = obj.Y_omega_array(:,i+1);
+                        obj.M_array(:,i) = obj.M_array(:,i+1);
+                        obj.W_array(:,i) = obj.W_array(:,i+1);
                     end
                     obj.Y_array(obj.integral_times_discrete)         = f;
                     obj.Y_omega_array(:,obj.integral_times_discrete) = Y_omega_J;
                     obj.M_array(:,obj.integral_times_discrete)       = M;
                     obj.W_array(:,obj.integral_times_discrete)       = W_now;
-                    
-                    x = zeros(3,1);
+                    disp("obj.m array");
+                    disp(obj.M_array);
+                        disp(" obj.y_omega");
+                        disp( obj.y_omega);
+                        disp("obj.y ");
+                        disp(obj.y);
+                        disp(" obj.M_hat");
+                        disp(obj.M_hat);
                     if iteration > obj.integral_times_discrete
                         for i= 1:obj.N-1
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
@@ -111,12 +120,22 @@ classdef controller
                         obj.sigma_M_hat_array(:,obj.N) = obj.M_hat;
                         obj.sigma_y_omega_array(:,obj.N) = obj.y_omega;
                         obj.sigma_y_array(obj.N) = obj.y;
+                        
+                        x = zeros(3,1);
+                        sigma_y_omega = zeros(3,1);
+                        sigma_M = zeros(3,1);
+                        sigma_y_theta = zeros(3,1);
                         for i=1:obj.N
-                                x = x + obj.sigma_y_array(i)*(obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta);
+                                x = x + obj.sigma_y_array(i)*( obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta );
+                                sigma_y_omega = sigma_y_omega +  obj.sigma_y_omega_array(:,i);
+                                sigma_M = sigma_M - obj.sigma_M_hat_array(:,i);
+                                sigma_y_theta = sigma_y_theta + obj.sigma_y_array(i)*obj.theta;
+                                
                         end
+
                         disp("x");
                         disp(x);
-                        theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR) + obj.k_icl * x;
+                        theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
 
                     
                     else
@@ -124,8 +143,8 @@ classdef controller
                     end
                     obj.theta = obj.theta + theta_hat_dot ;
                     obj.theta(3) = 0;
-                    disp("theta")
-                    disp(obj.theta);
+                    %disp("theta")
+                    %disp(obj.theta);
                 end
 %                 disp("M")
 %                 disp(M);

@@ -46,7 +46,7 @@ uav.W(:, 1) = [0; 0; 0];
 
 %% create controller
 control = controller;
-integral_time = 0.05;
+integral_time = 0.01;
 control.integral_times_discrete = integral_time/uav.dt;
 disp(control.integral_times_discrete);
 control.y = 0;
@@ -86,7 +86,7 @@ traj = trajectory;
        disp(pc_2_r(:,1));
 %% start iteration
 
-traj_type = "position";   %"circle","position"
+traj_type = "circle";   %"circle","position"
 controller_type = "ICL";   %"origin","EMK","adaptive"
 
 for i = 2:length(uav.t)

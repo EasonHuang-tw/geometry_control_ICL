@@ -7,11 +7,12 @@ classdef controller
          %% adaptive
          theta = [0;0;0];
          gamma = 0.0005;
+%         gamma = 0;
          c2 = 1
         %% ICL
         integral_times_discrete ;
         k_icl = 0.000001;
-        N = 1;
+        N = 20;
         y_i;
         
         y;
@@ -69,7 +70,11 @@ classdef controller
                     obj.theta(3) = 0;
                     disp("theta")
                     disp(obj.theta);
-                
+                    
+                    obj.theta = obj.theta + theta_hat_dot ;
+                    obj.theta(3) = 0;
+                    disp("theta")
+                    disp(obj.theta);
                 elseif type == "ICL"
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - obj.theta*f;
                     
@@ -79,16 +84,10 @@ classdef controller
                                   -W_now(1,1)*W_now(2,1) ,  W_now(1,1)*W_now(2,1) ,                      0 ;];
                         
                     Y_omega_J = Y_omega*[uav.J(1,1);uav.J(2,2);uav.J(3,3)];
-                    disp("Y_omega_J")
-                    disp(Y_omega_J)
                     obj.y       = obj.y + f - obj.Y_array(1);
-                    %obj.y_omega = obj.y_omega + Y_omega_J - obj.Y_omega_array(:,1) + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
-                    obj.y_omega = [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
-%                     disp("W dot effect");
-%                     disp([(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)]);
+                    obj.y_omega = obj.y_omega + Y_omega_J - obj.Y_omega_array(:,1) + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
                     obj.M_hat   = obj.M_hat + M -obj.M_array(:,1);
-%                     disp("y omega");
-%                     disp(obj.y_omega);
+
                     
                     for i= 1:obj.integral_times_discrete-1
                         obj.Y_array(i) = obj.Y_array(i+1);
@@ -101,7 +100,6 @@ classdef controller
                     obj.M_array(:,obj.integral_times_discrete)       = M;
                     obj.W_array(:,obj.integral_times_discrete)       = W_now;
                     
-                    x = zeros(3,1);
                     if iteration > obj.integral_times_discrete
                         for i= 1:obj.N-1
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
@@ -112,10 +110,19 @@ classdef controller
                         obj.sigma_M_hat_array(:,obj.N) = obj.M_hat;
                         obj.sigma_y_omega_array(:,obj.N) = obj.y_omega;
                         obj.sigma_y_array(obj.N) = obj.y;
+                        
+                        x = zeros(3,1);
+                        sigma_y_omega = zeros(3,1);
+                        sigma_M = zeros(3,1);
                         for i=1:obj.N
-                                x = x + obj.sigma_y_array(i)*(obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta);
+                                x = x + obj.sigma_y_array(i)*( obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta );
+                                sigma_y_omega = sigma_y_omega +  obj.sigma_y_omega_array(:,i);
+                                sigma_M = sigma_M -;
+                                
                         end
-                        theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR) + obj.k_icl*obj.gamma*x;
+                        disp("x");
+                        disp(x);
+                        theta_hat_dot = 0*obj.gamma*f*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
 
                     
                     else
