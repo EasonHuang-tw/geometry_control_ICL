@@ -24,7 +24,9 @@ uav.allocation_matrix_inv = cal_allocation_matrix_inv(uav.allocation_matrix);
 %% create states array
 uav.x = zeros(3, length(uav.t));
 uav.v = zeros(3, length(uav.t));
+uav.a = zeros(3, length(uav.t));
 uav.R = zeros(9, length(uav.t));
+uav.W = zeros(3, length(uav.t));
 uav.W = zeros(3, length(uav.t));
 uav.ex = zeros(3, length(uav.t));
 uav.ev = zeros(3, length(uav.t));
@@ -37,16 +39,12 @@ real_theta_array = zeros(3, length(uav.t));
 theta_array = zeros(3, length(uav.t));
 
 desired_x = zeros(3, length(uav.t));
-
+dX = zeros(18, 1);
 %% initial state
-uav.x(:, 1) = [0; 0; 0];
-uav.v(:, 1) = [0; 0; 0];
-uav.R(:, 1) = [1; 0; 0; 0; 1; 0; 0; 0; 1];
-uav.W(:, 1) = [0; 0; 0];
 
 %% create controller
 control = controller;
-integral_time = 0.05;
+integral_time = 0.01;
 control.integral_times_discrete = integral_time/uav.dt;
 disp(control.integral_times_discrete);
 control.y = 0;
@@ -55,12 +53,16 @@ control.M_hat = zeros(3,1);
 
 control.Y_array = zeros(1,control.integral_times_discrete);
 control.Y_omega_array = zeros(3,control.integral_times_discrete);
-control.M_array = zeros(3,control.integral_times_discrete);
+control.M_array = zeros(3,control.integral_times_discrete
+uav.x(:, 1) = [0; 0; 0];
+uav.v(:, 1) = [0; 0; 0];
+uav.R(:, 1) = [1; 0; 0; 0; 1; 0; 0; 0; 1];
+uav.W(:, 1) = [0; 0; 0];);
 control.W_array = zeros(3,control.integral_times_discrete);
 
-control.sigma_M_hat_array(:,controlN) = obj.M_hat;
-control.sigma_y_omega_array(:,obj.N) = obj.y_omega;
-control.sigma_y_array(obj.N) = obj.y;
+control.sigma_M_hat_array = zeros(3,control.N);
+control.sigma_y_omega_array = zeros(3,control.N);
+control.sigma_y_array = zeros(control.N);
 
 disp("integral times")
 disp(control.integral_times_discrete)
@@ -78,7 +80,7 @@ traj = trajectory;
 %          -uav.d*cos_45, uav.d*cos_45, uav.d*cos_45, -uav.d*cos_45;
 %           uav.d*cos_45 -0.05, uav.d*cos_45 -0.05,-uav.d*cos_45 +0.05, -uav.d*cos_45 +0.05;
 %          -uav.c_tau, uav.c_tau, -uav.c_tau, uav.c_tau];
-       uav.pc_2_mc = [0.05;0.05;0]; %pose center to mass center
+       uav.pc_2_mc = [0;0;0]; %pose center to mass center
        uav_l = uav.d*cos_45;
        pc_2_r = [  uav_l - uav.pc_2_mc(1),   uav_l - uav.pc_2_mc(1), -(uav_l + uav.pc_2_mc(1)), -(uav_l + uav.pc_2_mc(1));
                    uav_l - uav.pc_2_mc(2),-(uav_l + uav.pc_2_mc(2)), -(uav_l + uav.pc_2_mc(2)),     uav_l- uav.pc_2_mc(2);
@@ -86,8 +88,8 @@ traj = trajectory;
        disp(pc_2_r(:,1));
 %% start iteration
 
-traj_type = "position";   %"circle","position"
-controller_type = "ICL";   %"origin","EMK","adaptive"
+traj_type = "circle";   %"circle","position"
+controller_type = "origin";   %"origin","EMK","adaptive"
 
 for i = 2:length(uav.t)
     t_now = uav.t(i);
@@ -115,11 +117,14 @@ for i = 2:length(uav.t)
         reshape(reshape(uav.R(:, i-1), 3, 3), 9, 1);
         uav.W(:, i-1)];
     [T, X_new] = ode45(@(t, x) uav.dynamics( x, real_control_force), [0, dt], X0);
+    dX = dynamics(x , real_control_force);
     %disp( X_new(end, :))
     uav.x(:, i) = X_new(end, 1:3);
     uav.v(:, i) = X_new(end, 4:6);
+    uav.a(:, i) = dX(4:6)';
     uav.R(:, i) = X_new(end, 7:15);
     uav.W(:, i) = X_new(end, 16:18);
+    uav.W_dot(:, i) = dX(16:18)';
     
 %     disp("X:");
 %     disp(uav.ex(:,i));
@@ -180,7 +185,9 @@ subplot(2,1,1);
 plot(uav.t(2:end), theta_array(1,2:end),uav.t(2:end),real_theta_array(1,2:end));
 legend({'theta1','theta1_d'},'Location','southwest')
 title('theta 1')
+axis([-inf inf -0.1 0.1])
 subplot(2,1,2);
 plot(uav.t(2:end), theta_array(2,2:end),uav.t(2:end),real_theta_array(2,2:end));
 legend({'theta2','theta2_d'},'Location','southwest')
 title('theta 2')
+axis([-inf inf -0.1 0.1])

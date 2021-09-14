@@ -6,12 +6,12 @@ classdef controller
          kW = 1*eye(3);
          %% adaptive
          theta = [0;0;0];
-         gamma = 0.0005;
+         gamma = 0.00015;
 %         gamma = 0;
          c2 = 1
         %% ICL
         integral_times_discrete ;
-        k_icl = 0.0001;
+        k_icl = 0.002;
         N = 20;
         y_i;
         
@@ -30,11 +30,26 @@ classdef controller
          
         end
    methods
+             function [u, u_dot, u_ddot] = deriv_unit_vector(obj,q, q_dot, q_ddot)
+
+                nq = norm(q);
+                u = q / nq;
+                u_dot = q_dot / nq - q * dot(q, q_dot) / nq^3;
+
+                u_ddot = q_ddot / nq - q_dot / nq^3 * (2 * dot(q, q_dot))...
+                    - q / nq^3 * (dot(q_dot, q_dot) + dot(q, q_ddot))...
+                    + 3 * q / nq^5 * dot(q, q_dot)^2;
+
+              end
               function [control,ex,ev,eR,eW,obj] = geometric_tracking_ctrl(obj,iteration,uav,desired,type)
                 desired_p = desired(:,1);
                 desired_v = desired(:,2);
                 desired_a = desired(:,3);     
-                desired_b1= desired(:,4);
+                desired_j = desired(:,4);  
+                desired_s = desired(:,5);
+                desired_b1= desired(:,6);
+                desired_b1_dot= desired(:,7);
+                desired_b1_ddot= desired(:,8);
                 desired_W = [0;0;0];
                 desired_W_dot = [0;0;0];
                 R_now = reshape(uav.R(:,iteration-1), 3, 3);
@@ -44,32 +59,65 @@ classdef controller
                 %linear
                 ex = uav.x(:,iteration-1) - desired_p;
                 ev = uav.v(:,iteration-1) - desired_v;
+                ea = uav.a(:,iteration-1) - desired_a;
 %                 disp("error_pose")
 %                 disp(ex);
-                A = (obj.kx*ex + obj.kv*ev + uav.m*uav.g*uav.e3 + desired_a);
-                f = dot(A,R_now*uav.e3);
+                
+
+                A = -obj.kx*ex - obj.kv*ev - uav.m*uav.g*uav.e3 + desired_a;
+                f = dot(-A,R_now*uav.e3);
+                
+                %% calc A_dot,A_ddot
+                
+                
+                A_dot = -obj.kx * ev - obj.kv * ea + uav.m * desired_j;
+                
+                b3 = R_now * uav.e3;
+                b3_dot = R_now * hat(W_now) * uav.e3;
+                f_dot = -dot(A_dot, b3) - dot(A, b3_dot);
+                ej = - f_dot / uav.m * b3 - f / uav.m * b3_dot - desired_j;
+                
+                A_ddot = -obj.kx * ea - obj.kv * ej + uav.m * desired_s;
+                
+                [b3_c, b3_c_dot, b3_c_ddot] = obj.deriv_unit_vector(-A, -A_dot, -A_ddot);
+                %disp(A_dot);
+
+                A2 = -hat(desired_b1) * b3_c;
+                A2_dot = -hat(desired_b1_dot) * b3_c - hat(desired_b1) * b3_c_dot;
+                A2_ddot = - hat(desired_b1_ddot) * b3_c - 2 * hat(desired_b1_dot) * b3_c_dot - hat(desired_b1) * b3_c_ddot;
+                [b2_c, b2_c_dot, b2_c_ddot] = obj.deriv_unit_vector(A2, A2_dot, A2_ddot);
                 
                 %rotation
-                b3_c = A/abs(norm(A));
-                b2_c = cross(b3_c,desired_b1);
-                b1_c = cross(b2_c,b3_c);
+                %b3_c = -A/abs(norm(A));
+                %b2_c = cross(b3_c,desired_b1);
+                b1_c = hat(b2_c) * b3_c;
+                b1_c_dot = hat(b2_c_dot) * b3_c + hat(b2_c)*b3_c_dot;
+                b1_c_ddot = hat(b2_c_ddot) * b3_c + 2 * hat(b2_c_dot) * b3_c_dot + hat(b2_c) * b2_c_ddot;
                 R_c = [b1_c,b2_c,b3_c];
+                R_c_dot = [b1_c_dot, b2_c_dot, b3_c_dot];
+                R_c_ddot = [b1_c_ddot, b2_c_ddot, b3_c_ddot];
    
+                W_c = vee(R_c' * R_c_dot);
+                W_c_dot = vee(R_c' * R_c_ddot - hat(W_c)^2);
+                disp(W_c_dot)
+%                 W3 = dot(R_now * uav.e3, R_c * W_c);
+%                 W3_dot = dot(R_now * uav.e3, R_c * W_c_dot) + dot(R_now * hat(W_now) * uav.e3, R_c * W_c);
+                
                 W_hat = hat(W_now);
                 eR = 0.5*vee((R_c'*R_now-R_now'*R_c));     % error R
-                eW = W_now-R_now'*R_c*desired_W;
+                eW = W_now-R_now'*R_c*W_c;
 
+                
+                
                 if type == "origin"
-                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot);
+                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot);
                 elseif type == "EMK"
-                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - [uav.pc_2_mc(2);-uav.pc_2_mc(1);0]*f;
+                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - [uav.pc_2_mc(2);-uav.pc_2_mc(1);0]*f;
                 elseif type == "adaptive"
-                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - obj.theta*f;
+                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - obj.theta*f;
                     theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR);
                     obj.theta = obj.theta + theta_hat_dot;
                     obj.theta(3) = 0;
-                    disp("theta")
-                    disp(obj.theta);
                     
                     obj.theta = obj.theta + theta_hat_dot ;
                     obj.theta(3) = 0;
@@ -78,7 +126,7 @@ classdef controller
                 elseif type == "ICL"
                     disp("obj.integral_times_discrete");
                     disp(obj.integral_times_discrete);
-                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*desired_W - R_now'*R_c*desired_W_dot) - obj.theta*f;
+                    M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - obj.theta*f;
                     disp("M");
                     disp(M);
                     

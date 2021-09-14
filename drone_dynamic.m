@@ -21,8 +21,10 @@ classdef drone_dynamic
         % states
         x
         v
+        a
         R
         W
+        W_dot
         % errors
         ex
         ev
