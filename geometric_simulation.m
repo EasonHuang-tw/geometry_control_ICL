@@ -89,7 +89,7 @@ traj = trajectory;
 %% start iteration
 
 traj_type = "circle";   %"circle","position"
-controller_type = "EMK";   %"origin","EMK","adaptive","ICL"
+controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
 
 for i = 2:length(uav.t)
     t_now = uav.t(i);
@@ -117,6 +117,8 @@ for i = 2:length(uav.t)
         reshape(reshape(uav.R(:, i-1), 3, 3), 9, 1);
         uav.W(:, i-1)];
     [T, X_new] = ode45(@(t, x) uav.dynamics( x, real_control_force), [0, dt], X0);
+    disp("check");
+
     dX = uav.dynamics(X0 , real_control_force);
     %disp( X_new(end, :))
     uav.x(:, i) = X_new(end, 1:3);

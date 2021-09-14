@@ -33,12 +33,12 @@ classdef controller
              function [u, u_dot, u_ddot] = deriv_unit_vector(obj,q, q_dot, q_ddot)
 
                 nq = norm(q);
-                u = q / nq;
-                u_dot = q_dot / nq - q * dot(q, q_dot) / nq^3;
+                u = - q / nq;
+                u_dot = - q_dot / nq + dot(q, q_dot)*q / nq^3;
 
-                u_ddot = q_ddot / nq - q_dot / nq^3 * (2 * dot(q, q_dot))...
-                    - q / nq^3 * (dot(q_dot, q_dot) + dot(q, q_ddot))...
-                    + 3 * q / nq^5 * dot(q, q_dot)^2;
+                u_ddot = - q_ddot / nq +  (2 * dot(q, q_dot))*q_dot / nq^3 ...
+                    +  (dot(q_dot, q_dot) + dot(q, q_ddot))*q / nq^3 ...
+                    - 3 * dot(q, q_dot)^2 * q/ nq^5;
 
               end
               function [control,ex,ev,eR,eW,obj] = geometric_tracking_ctrl(obj,iteration,uav,desired,type)
@@ -79,12 +79,12 @@ classdef controller
                 
                 A_ddot = -obj.kx * ea - obj.kv * ej + uav.m * desired_s;
                 
-                [b3_c, b3_c_dot, b3_c_ddot] = obj.deriv_unit_vector(-A, -A_dot, -A_ddot);
+                [b3_c, b3_c_dot, b3_c_ddot] = obj.deriv_unit_vector(A, A_dot, A_ddot);
                 %disp(A_dot);
 
-                A2 = -hat(desired_b1) * b3_c;
-                A2_dot = -hat(desired_b1_dot) * b3_c - hat(desired_b1) * b3_c_dot;
-                A2_ddot = - hat(desired_b1_ddot) * b3_c - 2 * hat(desired_b1_dot) * b3_c_dot - hat(desired_b1) * b3_c_ddot;
+                A2 = hat(b3_c) * desired_b1;
+                A2_dot = hat(b3_c_dot) * desired_b1 + hat(b3_c) * desired_b1_dot;
+                A2_ddot = hat(b3_c_ddot) * desired_b1 + 2 * hat(b3_c_dot) * desired_b1_dot + hat(b3_c) * desired_b1_ddot;
                 [b2_c, b2_c_dot, b2_c_ddot] = obj.deriv_unit_vector(A2, A2_dot, A2_ddot);
                 
                 %rotation
@@ -92,7 +92,7 @@ classdef controller
                 %b2_c = cross(b3_c,desired_b1);
                 b1_c = hat(b2_c) * b3_c;
                 b1_c_dot = hat(b2_c_dot) * b3_c + hat(b2_c)*b3_c_dot;
-                b1_c_ddot = hat(b2_c_ddot) * b3_c + 2 * hat(b2_c_dot) * b3_c_dot + hat(b2_c) * b2_c_ddot;
+                b1_c_ddot = hat(b2_c_ddot) * b3_c + 2 * hat(b2_c_dot) * b3_c_dot + hat(b2_c) * b3_c_ddot;
                 R_c = [b1_c,b2_c,b3_c];
                 R_c_dot = [b1_c_dot, b2_c_dot, b3_c_dot];
                 R_c_ddot = [b1_c_ddot, b2_c_ddot, b3_c_ddot];
@@ -124,11 +124,9 @@ classdef controller
                     disp("theta")
                     disp(obj.theta);
                 elseif type == "ICL"
-                    disp("obj.integral_times_discrete");
-                    disp(obj.integral_times_discrete);
+
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - obj.theta*f;
-                    disp("M");
-                    disp(M);
+
                     
                     Y_omega = [                        0 , -W_now(2,1)*W_now(3,1) ,  W_now(2,1)*W_now(3,1) ;
                                    W_now(1,1)*W_now(3,1) ,                      0 , -W_now(1,1)*W_now(3,1) ;
@@ -150,14 +148,14 @@ classdef controller
                     obj.Y_omega_array(:,obj.integral_times_discrete) = Y_omega_J;
                     obj.M_array(:,obj.integral_times_discrete)       = M;
                     obj.W_array(:,obj.integral_times_discrete)       = W_now;
-                    disp("obj.m array");
-                    disp(obj.M_array);
-                        disp(" obj.y_omega");
-                        disp( obj.y_omega);
-                        disp("obj.y ");
-                        disp(obj.y);
-                        disp(" obj.M_hat");
-                        disp(obj.M_hat);
+%                     disp("obj.m array");
+%                     disp(obj.M_array);
+%                         disp(" obj.y_omega");
+%                         disp( obj.y_omega);
+%                         disp("obj.y ");
+%                         disp(obj.y);
+%                         disp(" obj.M_hat");
+%                         disp(obj.M_hat);
                     if iteration > obj.integral_times_discrete
                         for i= 1:obj.N-1
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
@@ -181,8 +179,8 @@ classdef controller
                                 
                         end
 
-                        disp("x");
-                        disp(x);
+%                         disp("x");
+%                         disp(x);
                         theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
 
                     
