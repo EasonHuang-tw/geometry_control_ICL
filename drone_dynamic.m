@@ -25,6 +25,9 @@ classdef drone_dynamic
         R
         W
         W_dot
+        
+        x_pose
+        v_pose
         % errors
         ex
         ev

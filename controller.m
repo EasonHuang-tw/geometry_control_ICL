@@ -1,18 +1,18 @@
 classdef controller
     properties
          kx=13;
-         kv=10;
-         kR = 10*eye(3);
-         kW = 1*eye(3);
+         kv=6;
+         kR = 14*eye(3);
+         kW = 1.2*eye(3);
          %% adaptive
          theta = [0;0;0];
-         gamma = 0.00015;
+         gamma =  0.00007;
 %         gamma = 0;
-         c2 = 1
+         c2 = 12
         %% ICL
         integral_times_discrete ;
-        k_icl = 0.002;
-        N = 20;
+        k_icl = 0.005;
+        N = 10;
         y_i;
         
         y;
@@ -66,7 +66,6 @@ classdef controller
 
                 A = -obj.kx*ex - obj.kv*ev - uav.m*uav.g*uav.e3 + desired_a;
                 f = dot(-A,R_now*uav.e3);
-                
                 %% calc A_dot,A_ddot
                 
                 
@@ -82,11 +81,11 @@ classdef controller
                 [b3_c, b3_c_dot, b3_c_ddot] = obj.deriv_unit_vector(A, A_dot, A_ddot);
                 %disp(A_dot);
 
-                A2 = hat(b3_c) * desired_b1;
-                A2_dot = hat(b3_c_dot) * desired_b1 + hat(b3_c) * desired_b1_dot;
-                A2_ddot = hat(b3_c_ddot) * desired_b1 + 2 * hat(b3_c_dot) * desired_b1_dot + hat(b3_c) * desired_b1_ddot;
+                A2 = -hat(b3_c) * desired_b1;
+                A2_dot = -(hat(b3_c_dot) * desired_b1 + hat(b3_c) * desired_b1_dot);
+                A2_ddot = -(hat(b3_c_ddot) * desired_b1 + 2 * hat(b3_c_dot) * desired_b1_dot + hat(b3_c) * desired_b1_ddot);
                 [b2_c, b2_c_dot, b2_c_ddot] = obj.deriv_unit_vector(A2, A2_dot, A2_ddot);
-                
+
                 %rotation
                 %b3_c = -A/abs(norm(A));
                 %b2_c = cross(b3_c,desired_b1);
@@ -99,7 +98,7 @@ classdef controller
    
                 W_c = vee(R_c' * R_c_dot);
                 W_c_dot = vee(R_c' * R_c_ddot - hat(W_c)^2);
-                disp(W_c_dot)
+
 %                 W3 = dot(R_now * uav.e3, R_c * W_c);
 %                 W3_dot = dot(R_now * uav.e3, R_c * W_c_dot) + dot(R_now * hat(W_now) * uav.e3, R_c * W_c);
                 
@@ -194,9 +193,9 @@ classdef controller
                 end
 %                 disp("M")
 %                 disp(M);
-                
                 control(1) = f;
                 control(2:4) = M;
+
               end
    end
 end
