@@ -64,7 +64,7 @@ classdef controller
 %                 disp(ex);
                 
 
-                A = -obj.kx*ex - obj.kv*ev - uav.m*uav.g*uav.e3 + desired_a;
+                A = -obj.kx*ex - obj.kv*ev - uav.m*uav.g*uav.e3 + uav.m*desired_a;
                 f = dot(-A,R_now*uav.e3);
                 %% calc A_dot,A_ddot
                 
@@ -114,7 +114,7 @@ classdef controller
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - [uav.pc_2_mc(2);-uav.pc_2_mc(1);0]*f;
                 elseif type == "adaptive"
                     M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) - obj.theta*f;
-                    theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR);
+                    theta_hat_dot = obj.gamma*f*(eW+obj.c2*eR);  
                     obj.theta = obj.theta + theta_hat_dot;
                     obj.theta(3) = 0;
                     
