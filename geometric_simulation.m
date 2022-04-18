@@ -5,7 +5,7 @@ addpath('geometry-toolbox')
 %% set drone parameters
 % simulation time
 dt = 1/400;
-sim_t = 200;
+sim_t = 20;
 
 uav = drone_dynamic;
 uav.dt = dt;            %delta t
@@ -100,6 +100,8 @@ control.Y_array = zeros(1,control.integral_times_discrete);
 control.Y_omega_array = zeros(3,control.integral_times_discrete);
 control.M_array = zeros(3,control.integral_times_discrete);
 control.W_array = zeros(3,control.integral_times_discrete);
+control.R_array = zeros(3,control.integral_times_discrete);
+
 
 control.sigma_M_hat_array = zeros(3,control.N);
 control.sigma_y_omega_array = zeros(3,control.N);
@@ -117,7 +119,8 @@ traj = trajectory;
        
 %% create allocation matrix
         cos_45 = cosd(45);
-       uav.pc_2_mc = [0.1;0.1;0.1]; %pose center to mass center
+       uav.pc_2_mc = [0.1;0.1;0.0]; %pose center to mass center
+%        uav.pc_2_mc = [0;0;0];
        uav_l = uav.d*cos_45;
        pc_2_r = [  uav_l - uav.pc_2_mc(1),   uav_l - uav.pc_2_mc(1), -(uav_l + uav.pc_2_mc(1)), -(uav_l + uav.pc_2_mc(1));
                    uav_l - uav.pc_2_mc(2),-(uav_l + uav.pc_2_mc(2)), -(uav_l + uav.pc_2_mc(2)),     uav_l- uav.pc_2_mc(2);
@@ -164,18 +167,18 @@ for i = 2:length(uav.t)
     v_pose = X_new(end, 4:6) + (R_wb*cross(X_new(end, 16:18),-uav.pc_2_mc)')';
     
     %% kalmen filter
-    r_pm_x = -control.theta(2,1);
-    r_pm_y = control.theta(1,1);
-    kf = kf.KF(x_pose,v_pose,r_pm_x,r_pm_y,control_output,uav.m,X_new(end, 1:3),X_new(end, 4:6),X_new(end, 7:15),X_new(end, 16:18),uav.dt);
-    disp('kf x');
-    disp(kf.states(3));
-    disp(X_new(end,3));
-    disp(kf.states(3) - X_new(end,3))
-    states_array_x(:,i) = kf.states(1:3);
-    states_array_v(:,i) = kf.states(4:6);
-    states_array_z(1,i) = kf.states(7);
-    real_array_z(1,i) = -uav.pc_2_mc(3);
-    array_y_telta(:,i) = kf.y_telta;
+%     r_pm_x = -control.theta(2,1);
+%     r_pm_y = control.theta(1,1);
+%     kf = kf.KF(x_pose,v_pose,r_pm_x,r_pm_y,control_output,uav.m,X_new(end, 1:3),X_new(end, 4:6),X_new(end, 7:15),X_new(end, 16:18),uav.dt);
+%     disp('kf x');
+%     disp(kf.states(3));
+%     disp(X_new(end,3));
+%     disp(kf.states(3) - X_new(end,3))
+%     states_array_x(:,i) = kf.states(1:3);
+%     states_array_v(:,i) = kf.states(4:6);
+%     states_array_z(1,i) = kf.states(7);
+%     real_array_z(1,i) = -uav.pc_2_mc(3);
+%     array_y_telta(:,i) = kf.y_telta;
     
     % Save the states 
     uav.x(:, i) = X_new(end, 1:3);

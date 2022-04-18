@@ -23,6 +23,7 @@ classdef controller
         Y_omega_array;
         M_array;
         W_array;
+        R_array;
 
         sigma_y_array;
         sigma_y_omega_array;
@@ -132,21 +133,27 @@ classdef controller
                                   -W_now(1,1)*W_now(2,1) ,  W_now(1,1)*W_now(2,1) ,                      0 ;];
                         
                     Y_omega_J = Y_omega*[uav.J(1,1);uav.J(2,2);uav.J(3,3)];
-                    obj.y       = obj.y + f - obj.Y_array(1);
-                    obj.y_omega = obj.y_omega + Y_omega_J - obj.Y_omega_array(:,1) + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
-                    obj.M_hat   = obj.M_hat + M -obj.M_array(:,1);
+                    obj.y       = obj.y + f*uav.dt - obj.Y_array(1)*uav.dt;
+                    obj.y_omega = obj.y_omega + Y_omega_J*uav.dt - obj.Y_omega_array(:,1)*uav.dt + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
+                    obj.M_hat   = obj.M_hat + M*uav.dt -obj.M_array(:,1)*uav.dt;
 
+%                     Y_omega_J = Y_omega*[uav.J(1,1);uav.J(2,2);uav.J(3,3)];
+%                     obj.y       = obj.y + f - obj.Y_array(1);
+%                     obj.y_omega = obj.y_omega + Y_omega_J - obj.Y_omega_array(:,1) + [(W_now(1)-obj.W_array(1,1))*uav.J(1,1);(W_now(2)-obj.W_array(2,1))*uav.J(2,2);(W_now(3)-obj.W_array(3,1))*uav.J(3,3)];
+%                     obj.M_hat   = obj.M_hat + M -obj.M_array(:,1);
                     
                     for i= 1:obj.integral_times_discrete-1
                         obj.Y_array(i) = obj.Y_array(i+1);
                         obj.Y_omega_array(:,i) = obj.Y_omega_array(:,i+1);
                         obj.M_array(:,i) = obj.M_array(:,i+1);
                         obj.W_array(:,i) = obj.W_array(:,i+1);
+                        obj.R_array(:,i) = obj.R_array(:,i+1);
                     end
                     obj.Y_array(obj.integral_times_discrete)         = f;
                     obj.Y_omega_array(:,obj.integral_times_discrete) = Y_omega_J;
                     obj.M_array(:,obj.integral_times_discrete)       = M;
                     obj.W_array(:,obj.integral_times_discrete)       = W_now;
+                    obj.R_array(:,obj.integral_times_discrete)       = R_now;
 %                     disp("obj.m array");
 %                     disp(obj.M_array);
 %                         disp(" obj.y_omega");
@@ -167,14 +174,12 @@ classdef controller
                         obj.sigma_y_array(obj.N) = obj.y;
                         
                         x = zeros(3,1);
-                        sigma_y_omega = zeros(3,1);
-                        sigma_M = zeros(3,1);
-                        sigma_y_theta = zeros(3,1);
+
                         for i=1:obj.N
                                 x = x + obj.sigma_y_array(i)*( obj.sigma_y_omega_array(:,i) - obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(i)*obj.theta );
-                                sigma_y_omega = sigma_y_omega +  obj.sigma_y_omega_array(:,i);
-                                sigma_M = sigma_M - obj.sigma_M_hat_array(:,i);
-                                sigma_y_theta = sigma_y_theta + obj.sigma_y_array(i)*obj.theta;
+%                                 sigma_y_omega = sigma_y_omega +  obj.sigma_y_omega_array(:,i);
+%                                 sigma_M = sigma_M - obj.sigma_M_hat_array(:,i);
+%                                 sigma_y_theta = sigma_y_theta + obj.sigma_y_array(i)*obj.theta;
                                 
                         end
 
