@@ -48,7 +48,7 @@ classdef drone_dynamic
             dx = X(4:6);
             dv = obj.g*obj.e3 - (f/obj.m)*R_now*obj.e3;
             dR = R_now*hat_map(W_now);
-            dW = obj.J\(-vec_cross(W_now, obj.J*W_now) + M);
+            dW = obj.J\(-cross(W_now, obj.J*W_now) + M);
             
             dX(1:3) = dx;
             dX(4:6) = dv;

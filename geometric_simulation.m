@@ -38,31 +38,32 @@ uav.eW = zeros(3, length(uav.t));
 uav.force_moment = zeros(4, length(uav.t));
 uav.rotor_thrust = zeros(4, length(uav.t));
 
-real_theta_array = zeros(3, length(uav.t));
-theta_array = zeros(3, length(uav.t));
-
+real_theta_array = zeros(2, length(uav.t));
+theta_array = zeros(2, length(uav.t));
+theta_hat_dot_array = zeros(2, length(uav.t));
+contorl_output_array = zeros(4, length(uav.t));
 desired_x = zeros(3, length(uav.t));
 dX = zeros(18, 1);
 
 %% create Kalmen filter class
-kf = z_axis_KF;
-kf.r_mp_z = 0;
-
-states_array_x = zeros(3, length(uav.t));
-states_array_v = zeros(3, length(uav.t));
-states_array_z = zeros(1,length(uav.t));
-real_array_z = zeros(1,length(uav.t));
-array_y_telta = zeros(6,length(uav.t));
+% kf = z_axis_KF;
+% kf.r_mp_z = 0;
+% 
+% states_array_x = zeros(3, length(uav.t));
+% states_array_v = zeros(3, length(uav.t));
+% states_array_z = zeros(1,length(uav.t));
+% real_array_z = zeros(1,length(uav.t));
+% array_y_telta = zeros(6,length(uav.t));
 %% initial state
 uav.x(:, 1) = [1; 0; 0];
 uav.v(:, 1) = [0; 0; 0];
 uav.R(:, 1) = [1; 0; 0; 0; 1; 0; 0; 0; 1];
 uav.W(:, 1) = [0; 0; 0];
-
-kf.states(1:3,1) = uav.x(:,1);
-kf.states(4:6,1) = uav.v(:,1);
-kf.states(7,1) =  0;
-disp(kf.states);
+% %kf
+% kf.states(1:3,1) = uav.x(:,1);
+% kf.states(4:6,1) = uav.v(:,1);
+% kf.states(7,1) =  0;
+% disp(kf.states);
 %% kalmen filter covarience
 kf.P =  [   1,    0,    0,    0,    0,    0,    0;
                0, 1,    0,    0,    0,    0,    0;
@@ -89,23 +90,23 @@ kf.R = [    0.01,    0,    0,    0,    0,    0;
 
 %% create controller
 control = controller;
-integral_time = 0.01;
+integral_time = 0.005;
 control.integral_times_discrete = integral_time/uav.dt;
 disp(control.integral_times_discrete);
-control.y = 0;
+control.y = zeros(3,2);
 control.y_omega = zeros(3,1);
 control.M_hat = zeros(3,1);
 
-control.Y_array = zeros(1,control.integral_times_discrete);
+control.Y_array = zeros(3,2,control.integral_times_discrete);
 control.Y_omega_array = zeros(3,control.integral_times_discrete);
 control.M_array = zeros(3,control.integral_times_discrete);
 control.W_array = zeros(3,control.integral_times_discrete);
-control.R_array = zeros(3,control.integral_times_discrete);
+control.R_array = zeros(3,3,control.integral_times_discrete);
 
 
 control.sigma_M_hat_array = zeros(3,control.N);
 control.sigma_y_omega_array = zeros(3,control.N);
-control.sigma_y_array = zeros(control.N);
+control.sigma_y_array = zeros(3,2,control.N);
 
 disp("integral times")
 disp(control.integral_times_discrete)
@@ -122,7 +123,7 @@ traj = trajectory;
        uav.pc_2_mc = [0.1;0.1;0.0]; %pose center to mass center
 %        uav.pc_2_mc = [0;0;0];
        uav_l = uav.d*cos_45;
-       pc_2_r = [  uav_l - uav.pc_2_mc(1),   uav_l - uav.pc_2_mc(1), -(uav_l + uav.pc_2_mc(1)), -(uav_l + uav.pc_2_mc(1));
+       mc_2_r = [  uav_l - uav.pc_2_mc(1),   uav_l - uav.pc_2_mc(1), -(uav_l + uav.pc_2_mc(1)), -(uav_l + uav.pc_2_mc(1));
                    uav_l - uav.pc_2_mc(2),-(uav_l + uav.pc_2_mc(2)), -(uav_l + uav.pc_2_mc(2)),     uav_l- uav.pc_2_mc(2);
                                         0,                        0,                         0,                        0;];
 %        disp(pc_2_r(:,1));
@@ -131,36 +132,43 @@ traj = trajectory;
 traj_type = "circle";   %"circle","position"
 controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
 
+
 for i = 2:length(uav.t)
     t_now = uav.t(i);
     desired = traj.traj_generate(t_now,traj_type);
     desired_x(:,i) = desired(:,1);
     
     % calculate control force
-    [control_output, uav.ex(:, i), uav.ev(:, i), uav.eR(:, i), uav.eW(:, i),control] = control.geometric_tracking_ctrl(i,uav,desired,controller_type);
+    [theta_hat_dot,control_output, uav.ex(:, i), uav.ev(:, i), uav.eR(:, i), uav.eW(:, i),control] = control.geometric_tracking_ctrl(i,uav,desired,controller_type);
 
     % calculate real force applied on the drone
-    real_theta_array(:,i) = [uav.pc_2_mc(2),-uav.pc_2_mc(1),0];
+    real_theta_array(:,i) = [uav.pc_2_mc(1),uav.pc_2_mc(2)];
+    theta_hat_dot_array(:,i) =theta_hat_dot;
     theta_array(:,i) = control.theta;
     rotor_force = allocation_M\ control_output;
     real_control_force = zeros(4,1);
-    
+    contorl_output_array(:,i) = control_output;
     for rotor_num = 1:4
         real_control_force(1) = real_control_force(1)+rotor_force(rotor_num);
-        real_control_force(2:4) = real_control_force(2:4) + cross(pc_2_r(:,rotor_num),[0,0,-rotor_force(rotor_num)])';
+        real_control_force(2:4) = real_control_force(2:4) + cross(mc_2_r(:,rotor_num),[0,0,-rotor_force(rotor_num)])';
     end
         real_control_force(4) = [-uav.c_tau, uav.c_tau, -uav.c_tau, uav.c_tau]*rotor_force;
-
+   
     %% update states
     X0 = [uav.x(:, i-1);
         uav.v(:, i-1);
         reshape(reshape(uav.R(:, i-1), 3, 3), 9, 1);
-
         uav.W(:, i-1)];
+    R_last = reshape(uav.R(:,i-1), 3, 3);
     [T, X_new] = ode45(@(t, x) uav.dynamics( x, real_control_force), [0, dt], X0);
-
-    dX = uav.dynamics(X0 , real_control_force);
+    R_now = reshape(X_new(end, 7:15),3,3);
     
+%     (real_control_force(2:4)-control_output(2:4))/control_output(1)
+    M_tot = real_control_force(2:4);
+    dX = uav.dynamics(X0 , real_control_force);
+%      ((uav.J*(X_new(end, 16:18)'-uav.W(:, i-1)) + uav.dt*cross(uav.W(:, i-1),uav.J*uav.W(:, i-1))) - uav.dt*control_output(2:4)) / (uav.dt*control_output(1))
+
+%     uav.J;
     % calculate position of pose sensor
     R_wb = reshape(X_new(end, 7:15),3,3);
     x_pose = X_new(end, 1:3) + (R_wb*-uav.pc_2_mc)';
@@ -254,44 +262,80 @@ plot(uav.t(2:end), theta_array(2,2:end),uav.t(2:end),real_theta_array(2,2:end));
 legend({'theta2','theta2_d'},'Location','southwest')
 title('theta 2')
 axis([-inf inf -0.15 -0.05])
+%% theta_hat_dot
+figure('Name','theta_hat_dot result');
 
-%% theta
-figure('Name','pose');
+subplot(2,1,1);
+plot(uav.t(2:end), theta_hat_dot_array(1,2:end));
+legend({'theta hat dot 1'},'Location','southwest')
+title('theta hat dot 1')
+axis([-inf inf 0.05 0.15])
+subplot(2,1,2);
+plot(uav.t(2:end), theta_hat_dot_array(2,2:end));
+legend({'theta hat dot 2'},'Location','southwest')
+title('theta hat dot 2')
+axis([-inf inf -0.15 -0.05])
 
-subplot(3,1,1);
-plot(uav.t(2:end), uav.x(1,2:end),uav.t(2:end),uav.x_pose(1,2:end));
-legend({'x','x_pose'},'Location','southwest')
-title('x')
-axis([-inf inf -2 2])
-subplot(3,1,2);
-plot(uav.t(2:end), uav.x(2,2:end),uav.t(2:end),uav.x_pose(2,2:end));
-legend({'y','y_pose'},'Location','southwest')
-title('y')
-axis([-inf inf -2 2])
-subplot(3,1,3);
-plot(uav.t(2:end), uav.x(3,2:end),uav.t(2:end),uav.x_pose(3,2:end));
-legend({'z','z_pose'},'Location','southwest')
-title('z')
-axis([-inf inf -2 2])
+
+%% contorl output
+figure('Name','control output result');
+
+subplot(4,1,1);
+plot(uav.t(2:end), contorl_output_array(1,2:end));
+legend({'control 1'},'Location','southwest')
+title('control 1')
+
+subplot(4,1,2);
+plot(uav.t(2:end), contorl_output_array(2,2:end));
+legend({'control 2'},'Location','southwest')
+title('control 2')
+
+subplot(4,1,3);
+plot(uav.t(2:end), contorl_output_array(3,2:end));
+legend({'control 3'},'Location','southwest')
+title('control 3')
+
+subplot(4,1,4);
+plot(uav.t(2:end), contorl_output_array(3,2:end));
+legend({'control 4'},'Location','southwest')
+title('control 4')
+%% position and velocity of position sensor
+% figure('Name','pose');
+% 
+% subplot(3,1,1);
+% plot(uav.t(2:end), uav.x(1,2:end),uav.t(2:end),uav.x_pose(1,2:end));
+% legend({'x','x_pose'},'Location','southwest')
+% title('x')
+% axis([-inf inf -2 2])
+% subplot(3,1,2);
+% plot(uav.t(2:end), uav.x(2,2:end),uav.t(2:end),uav.x_pose(2,2:end));
+% legend({'y','y_pose'},'Location','southwest')
+% title('y')
+% axis([-inf inf -2 2])
+% subplot(3,1,3);
+% plot(uav.t(2:end), uav.x(3,2:end),uav.t(2:end),uav.x_pose(3,2:end));
+% legend({'z','z_pose'},'Location','southwest')
+% title('z')
+% axis([-inf inf -2 2])
 
 %% position and velocity of position sensor
-figure('Name','vel');
-
-subplot(3,1,1);
-plot(uav.t(2:end), uav.v(1,2:end),uav.t(2:end),uav.v_pose(1,2:end));
-legend({'x_vel','x_p_vel'},'Location','southwest')
-title('x')
-axis([-inf inf -2 2])
-subplot(3,1,2);
-plot(uav.t(2:end), uav.v(2,2:end),uav.t(2:end),uav.v_pose(2,2:end));
-legend({'y_vel','y_p_vel'},'Location','southwest')
-title('y')
-axis([-inf inf -2 2])
-subplot(3,1,3);
-plot(uav.t(2:end), uav.v(3,2:end),uav.t(2:end),uav.v_pose(3,2:end));
-legend({'z_vel','z_p_vel'},'Location','southwest')
-title('z')
-axis([-inf inf -2 2])
+% figure('Name','vel');
+% 
+% subplot(3,1,1);
+% plot(uav.t(2:end), uav.v(1,2:end),uav.t(2:end),uav.v_pose(1,2:end));
+% legend({'x_vel','x_p_vel'},'Location','southwest')
+% title('x')
+% axis([-inf inf -2 2])
+% subplot(3,1,2);
+% plot(uav.t(2:end), uav.v(2,2:end),uav.t(2:end),uav.v_pose(2,2:end));
+% legend({'y_vel','y_p_vel'},'Location','southwest')
+% title('y')
+% axis([-inf inf -2 2])
+% subplot(3,1,3);
+% plot(uav.t(2:end), uav.v(3,2:end),uav.t(2:end),uav.v_pose(3,2:end));
+% legend({'z_vel','z_p_vel'},'Location','southwest')
+% title('z')
+% axis([-inf inf -2 2])
 
 %% position and velocity of position sensor
 % figure('Name','omega');
@@ -310,122 +354,122 @@ axis([-inf inf -2 2])
 % axis([-inf inf -2 2])
 
 %% states
-figure('Name','KF_result_x');
-
-subplot(3,1,1);
-plot(uav.t(2:end), states_array_x(1,2:end),uav.t(2:end),uav.x(1,2:end));
-legend({'x_measured','x_real'},'Location','southwest')
-title('x')
-axis([-inf inf -2 2])
-subplot(3,1,2);
-plot(uav.t(2:end), states_array_x(2,2:end),uav.t(2:end),uav.x(2,2:end));
-legend({'y_measured','y_real'},'Location','southwest')
-title('y')
-axis([-inf inf -2 2])
-subplot(3,1,3);
-plot(uav.t(2:end), states_array_x(3,2:end),uav.t(2:end),uav.x(3,2:end));
-legend({'z_measured','z_real'},'Location','southwest')
-title('z')
-axis([-inf inf -2 2])
-
-figure('Name','KF_result_v');
-subplot(3,1,1);
-plot(uav.t(2:end), states_array_v(1,2:end),uav.t(2:end),uav.v(1,2:end));
-legend({'xv_measured','xv_real'},'Location','southwest')
-title('xv')
-axis([-inf inf -4 4])
-subplot(3,1,2);
-plot(uav.t(2:end), states_array_v(2,2:end),uav.t(2:end),uav.v(2,2:end));
-legend({'yv_measured','yv_real'},'Location','southwest')
-title('yv')
-axis([-inf inf -4 4])
-subplot(3,1,3);
-plot(uav.t(2:end), states_array_v(3,2:end),uav.t(2:end),uav.v(3,2:end));
-legend({'zv_measured','zv_real'},'Location','southwest')
-title('zv')
-axis([-inf inf -4 4])
-
-
-disp(length( states_array_z));
-disp(length(uav.t));
-figure('Name','KF_result_z');
-plot(uav.t(2:end), states_array_z(1,2:end),uav.t(2:end), real_array_z(1,2:end));
-legend({'zv_measured','zv_real'},'Location','southwest')
-title('zv')
-axis([-inf inf -1 1])
+% figure('Name','KF_result_x');
+% 
+% subplot(3,1,1);
+% plot(uav.t(2:end), states_array_x(1,2:end),uav.t(2:end),uav.x(1,2:end));
+% legend({'x_measured','x_real'},'Location','southwest')
+% title('x')
+% axis([-inf inf -2 2])
+% subplot(3,1,2);
+% plot(uav.t(2:end), states_array_x(2,2:end),uav.t(2:end),uav.x(2,2:end));
+% legend({'y_measured','y_real'},'Location','southwest')
+% title('y')
+% axis([-inf inf -2 2])
+% subplot(3,1,3);
+% plot(uav.t(2:end), states_array_x(3,2:end),uav.t(2:end),uav.x(3,2:end));
+% legend({'z_measured','z_real'},'Location','southwest')
+% title('z')
+% axis([-inf inf -2 2])
+% 
+% figure('Name','KF_result_v');
+% subplot(3,1,1);
+% plot(uav.t(2:end), states_array_v(1,2:end),uav.t(2:end),uav.v(1,2:end));
+% legend({'xv_measured','xv_real'},'Location','southwest')
+% title('xv')
+% axis([-inf inf -4 4])
+% subplot(3,1,2);
+% plot(uav.t(2:end), states_array_v(2,2:end),uav.t(2:end),uav.v(2,2:end));
+% legend({'yv_measured','yv_real'},'Location','southwest')
+% title('yv')
+% axis([-inf inf -4 4])
+% subplot(3,1,3);
+% plot(uav.t(2:end), states_array_v(3,2:end),uav.t(2:end),uav.v(3,2:end));
+% legend({'zv_measured','zv_real'},'Location','southwest')
+% title('zv')
+% axis([-inf inf -4 4])
+% 
+% 
+% disp(length( states_array_z));
+% disp(length(uav.t));
+% figure('Name','KF_result_z');
+% plot(uav.t(2:end), states_array_z(1,2:end),uav.t(2:end), real_array_z(1,2:end));
+% legend({'zv_measured','zv_real'},'Location','southwest')
+% title('zv')
+% axis([-inf inf -1 1])
 
 %% states error
-figure('Name','KF_result_error');
-
-subplot(4,1,1);
-plot(uav.t(2:end), states_array_x(1,2:end)-uav.x(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'x_error'},'Location','southwest')
-title('x')
-axis([-inf inf -0.5 0.5])
-subplot(4,1,2);
-plot(uav.t(2:end), states_array_x(2,2:end)-uav.x(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'y_error'},'Location','southwest')
-title('y')
-axis([-inf inf -0.5 0.5])
-subplot(4,1,3);
-plot(uav.t(2:end), states_array_x(3,2:end)-uav.x(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'z_error'},'Location','southwest')
-title('z')
-axis([-inf inf -0.5 0.5])
-subplot(4,1,4);
-plot(uav.t(2:end), states_array_z(1,2:end) - real_array_z(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'r_pm_z_error'},'Location','southwest')
-title('r_pm_z')
-axis([-inf inf -0.5 0.5])
-
-figure('Name','KF_vel_result_error');
-
-subplot(3,1,1);
-plot(uav.t(2:end), states_array_v(1,2:end)-uav.v(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'x_error'},'Location','southwest')
-title('x')
-axis([-inf inf -0.5 0.5])
-subplot(3,1,2);
-plot(uav.t(2:end), states_array_v(2,2:end)-uav.v(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'y_error'},'Location','southwest')
-title('y')
-axis([-inf inf -0.5 0.5])
-subplot(3,1,3);
-plot(uav.t(2:end), states_array_v(3,2:end)-uav.v(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'z_error'},'Location','southwest')
-title('z')
-axis([-inf inf -0.5 0.5])
+% figure('Name','KF_result_error');
+% 
+% subplot(4,1,1);
+% plot(uav.t(2:end), states_array_x(1,2:end)-uav.x(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'x_error'},'Location','southwest')
+% title('x')
+% axis([-inf inf -0.5 0.5])
+% subplot(4,1,2);
+% plot(uav.t(2:end), states_array_x(2,2:end)-uav.x(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'y_error'},'Location','southwest')
+% title('y')
+% axis([-inf inf -0.5 0.5])
+% subplot(4,1,3);
+% plot(uav.t(2:end), states_array_x(3,2:end)-uav.x(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'z_error'},'Location','southwest')
+% title('z')
+% axis([-inf inf -0.5 0.5])
+% subplot(4,1,4);
+% plot(uav.t(2:end), states_array_z(1,2:end) - real_array_z(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'r_pm_z_error'},'Location','southwest')
+% title('r_pm_z')
+% axis([-inf inf -0.5 0.5])
+% 
+% figure('Name','KF_vel_result_error');
+% 
+% subplot(3,1,1);
+% plot(uav.t(2:end), states_array_v(1,2:end)-uav.v(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'x_error'},'Location','southwest')
+% title('x')
+% axis([-inf inf -0.5 0.5])
+% subplot(3,1,2);
+% plot(uav.t(2:end), states_array_v(2,2:end)-uav.v(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'y_error'},'Location','southwest')
+% title('y')
+% axis([-inf inf -0.5 0.5])
+% subplot(3,1,3);
+% plot(uav.t(2:end), states_array_v(3,2:end)-uav.v(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'z_error'},'Location','southwest')
+% title('z')
+% axis([-inf inf -0.5 0.5])
 
 %% disp y_telta
-figure('Name','KF_result_error');
-
-subplot(6,1,1);
-plot(uav.t(2:end), array_y_telta(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'x'},'Location','southwest')
-title('x')
-axis([-inf inf -0.001 0.001])
-subplot(6,1,2);
-plot(uav.t(2:end), array_y_telta(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'y_error'},'Location','southwest')
-title('y')
-axis([-inf inf -0.001 0.001])
-subplot(6,1,3);
-plot(uav.t(2:end), array_y_telta(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'z_error'},'Location','southwest')
-title('z')
-axis([-inf inf -0.001 0.001])
-subplot(6,1,4);
-plot(uav.t(2:end), array_y_telta(4,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'vx'},'Location','southwest')
-title('vx')
-axis([-inf inf -0.001 0.001])
-subplot(6,1,5);
-plot(uav.t(2:end), array_y_telta(5,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'vy'},'Location','southwest')
-title('vy')
-axis([-inf inf -0.001 0.001])
-subplot(6,1,6);
-plot(uav.t(2:end), array_y_telta(6,2:end),uav.t(2:end),zero_for_compare(1,2:end));
-legend({'vz'},'Location','southwest')
-title('vz')
-axis([-inf inf -0.001 0.001])
+% figure('Name','KF_result_error');
+% 
+% subplot(6,1,1);
+% plot(uav.t(2:end), array_y_telta(1,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'x'},'Location','southwest')
+% title('x')
+% axis([-inf inf -0.001 0.001])
+% subplot(6,1,2);
+% plot(uav.t(2:end), array_y_telta(2,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'y_error'},'Location','southwest')
+% title('y')
+% axis([-inf inf -0.001 0.001])
+% subplot(6,1,3);
+% plot(uav.t(2:end), array_y_telta(3,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'z_error'},'Location','southwest')
+% title('z')
+% axis([-inf inf -0.001 0.001])
+% subplot(6,1,4);
+% plot(uav.t(2:end), array_y_telta(4,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'vx'},'Location','southwest')
+% title('vx')
+% axis([-inf inf -0.001 0.001])
+% subplot(6,1,5);
+% plot(uav.t(2:end), array_y_telta(5,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'vy'},'Location','southwest')
+% title('vy')
+% axis([-inf inf -0.001 0.001])
+% subplot(6,1,6);
+% plot(uav.t(2:end), array_y_telta(6,2:end),uav.t(2:end),zero_for_compare(1,2:end));
+% legend({'vz'},'Location','southwest')
+% title('vz')
+% axis([-inf inf -0.001 0.001])
