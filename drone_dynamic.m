@@ -2,7 +2,7 @@ classdef drone_dynamic
     properties
         % simulation time
         dt = 0.01;
-        sim_t = 10;     %total simulation duration
+        sim_t = 5;     %total simulation duration
         t;              %ever time steps
         iter
         % parameters

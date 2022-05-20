@@ -14,9 +14,10 @@ classdef controller
         %% ICL
         last_W= [0;0;0];
         last_f =0;
+        last_R = [1 0 0;0 1 0;0 0 1]
         integral_times_discrete ;
-        k_icl = 0.0001;
-        N = 5;
+        k_icl = 50;
+        N = 20;
         y_i;
         
         y;
@@ -130,45 +131,15 @@ classdef controller
                     disp("theta")
                     disp(obj.theta);
                 elseif type == "ICL"
-                    Y = [   0   -f  ;...
-                            f   0   ;...
+                    Y = [   0   -obj.last_f  ;...
+                            obj.last_f   0   ;...
                             0   0   ];
                    
 %                    ((uav.J*(X_new(end, 16:18)'-uav.W(:, i-1)) + uav.dt*cross(uav.W(:, i-1),uav.J*uav.W(:, i-1))) - uav.dt*control_output(2:4)) / (uav.dt*f)
-                   (uav.J*(W_now - obj.last_W) + uav.dt*cross(obj.last_W,uav.J*obj.last_W) - obj.M*uav.dt)/  (uav.dt*f)
+%                    (uav.J*(W_now - obj.last_W) + uav.dt*cross(obj.last_W,uav.J*obj.last_W) - obj.M*uav.dt)/  (uav.dt*obj.last_f)
                    obj.last_W = W_now;
                    obj.last_f = f;
-                   
-                   R_last_2_now = R_now'*obj.R_array(:,:,obj.integral_times_discrete);
-                   R_oldest_2_now = R_now'*obj.R_array(:,:,1);
-%                    R_last_2_now = 1;
-%                    R_oldest_2_now = 1;
-
-                    
-
-%                     R_last_2_now = 1;
-%                     R_oldest_2_now = R_now'*obj.R_array(:,:,1);
-%                     R_last_2_now = 1;
-%                     R_oldest_2_now = 1;
-                    Y_omega_J = cross(W_now,uav.J*W_now);
-
-                    obj.y       = R_last_2_now*obj.y + Y*uav.dt - R_oldest_2_now*obj.Y_array(:,:,1)*uav.dt;
-                    obj.y_omega = R_last_2_now*obj.y_omega + Y_omega_J*uav.dt -R_oldest_2_now*obj.Y_omega_array(:,1)*uav.dt...
-                                 + uav.J*(W_now -  R_oldest_2_now*obj.W_array(:,1));
-                    obj.M_hat   = R_last_2_now*obj.M_hat + obj.M*uav.dt -R_oldest_2_now*obj.M_array(:,1)*uav.dt;
-                    
-                    for i= 1:obj.integral_times_discrete-1
-                        obj.Y_array(i) = obj.Y_array(i+1);
-                        obj.Y_omega_array(:,i) = obj.Y_omega_array(:,i+1);
-                        obj.M_array(:,i) = obj.M_array(:,i+1);
-                        obj.W_array(:,i) = obj.W_array(:,i+1);
-                        obj.R_array(:,i) = obj.R_array(:,i+1);
-                    end
-                    obj.Y_array(:,:,obj.integral_times_discrete)         = Y;
-                    obj.Y_omega_array(:,obj.integral_times_discrete) = Y_omega_J;
-                    obj.M_array(:,obj.integral_times_discrete)       = obj.M;
-                    obj.W_array(:,obj.integral_times_discrete)       = W_now;
-                    obj.R_array(:,:,obj.integral_times_discrete)       = R_now;
+                   obj.last_R = R_now;
 
                     if iteration > obj.integral_times_discrete
                         for i= 1:obj.N-1
@@ -177,15 +148,18 @@ classdef controller
                             obj.sigma_y_array(:,:,i) = obj.sigma_y_array(:,:,i+1);
                         end
                         
-                        obj.sigma_M_hat_array(:,obj.N) = obj.M_hat;
-                        obj.sigma_y_omega_array(:,obj.N) = obj.y_omega;
-                        obj.sigma_y_array(:,:,obj.N) = obj.y;
+                        obj.sigma_M_hat_array(:,obj.N) = obj.M*uav.dt;
+                        obj.sigma_y_omega_array(:,obj.N) = cross(obj.last_W,uav.J*obj.last_W)*uav.dt + uav.J*(W_now - obj.last_W);
+                        obj.sigma_y_array(:,:,obj.N) = Y*uav.dt;
 
                         x = zeros(2,1);
                         for i=2:obj.N
                                 x = x + obj.sigma_y_array(:,:,i)'*(obj.sigma_M_hat_array(:,i)- obj.sigma_y_omega_array(:,i)  - obj.sigma_y_array(:,:,i)*obj.theta );
+%                                 disp(obj.sigma_y_array(:,:,i)'*(obj.sigma_M_hat_array(:,i)- obj.sigma_y_omega_array(:,i)  - obj.sigma_y_array(:,:,i)*[uav.pc_2_mc(1);uav.pc_2_mc(2)]))
                         end
-                        theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
+                         theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
+                           %disp('theta hat dot')
+                           %disp(theta_hat_dot)
                     else
                         for i= 1:obj.N-1
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
@@ -199,6 +173,7 @@ classdef controller
                         theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
                     end
                     obj.theta = obj.theta + theta_hat_dot ;
+                    disp(obj.theta)
                     obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) + Y*obj.theta;
                 end
 %                 disp("M")
