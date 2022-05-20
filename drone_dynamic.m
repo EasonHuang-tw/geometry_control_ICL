@@ -8,6 +8,7 @@ classdef drone_dynamic
         % parameters
         m = 1.25
         J = eye(3)
+        J_diag = eye(3)
         d = 0.2         %wing span
         pc_2_mc
         c_tau = 1.347e-2;

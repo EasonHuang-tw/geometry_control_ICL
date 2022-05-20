@@ -14,10 +14,10 @@ uav.t = 0:dt:sim_t;     %every time stamps
 
 uav.d = 0.2;            %wing span
 uav.m = 1.15;
-uav.J = [0.0131, 0, 0;
-         0, 0.0131, 0;
-         0, 0, 0.0244];
-
+uav.J = [0.0131, 0.0002, -0.0015;
+         0.0002, 0.0131, 0.0002;
+         -0.0015, 0.0002, 0.0244];
+uav.J_diag = diag([0.0131,0.0131,0.0244]);
 uav.allocation_matrix = cal_allocation_matrix(uav.d, uav.c_tau);
 uav.allocation_matrix_inv = cal_allocation_matrix_inv(uav.allocation_matrix);
 
@@ -130,7 +130,7 @@ traj = trajectory;
 %% start iteration
 
 traj_type = "circle";   %"circle","position"
-controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
+controller_type = "adaptive";   %"origin","EMK","adaptive","ICL"
 
 
 for i = 2:length(uav.t)

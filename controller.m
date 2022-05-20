@@ -2,15 +2,16 @@ classdef controller
     properties
          kx=13;
          kv=6;
-         kR = 14*eye(3);
-         kW = 1.2*eye(3);
+         kR = 10*eye(3);
+         kW = 1*eye(3);
          
           M = [0;0;0];
          %% adaptive
-         theta = [0;0];
-         gamma =  0.0001;
+           theta3 = [0;0;0;0;0;0;0;0];
+          theta = [0;0];
+         gamma =  diag([0.00001,0.00001,0.00001,0.00001,0.00001,0.00001,0.0001,0.0001]);
 %         gamma = 0;
-         c2 = 12
+         c2 = 20
         %% ICL
         last_W= [0;0;0];
         last_f =0;
@@ -30,6 +31,7 @@ classdef controller
         W_array;
         R_array;
         theta_hat_dot;
+        theta_hat_dot1;
         
         sigma_y_array;
         sigma_y_omega_array;
@@ -122,14 +124,26 @@ classdef controller
                     theta_hat_dot = [0;0];
                     obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) + f*[-uav.pc_2_mc(2);uav.pc_2_mc(1);0];
                 elseif type == "adaptive"
-                    Y = [   0   -f  ;...
+                    theta_hat_dot = [0;0];
+                    o_b = W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot; %omega_bar
+                    Y1 = [   0   -f  ;...
                             f   0   ;...
                             0   0   ];
-                    obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) + Y*obj.theta;
-                    theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
-                    obj.theta = obj.theta + theta_hat_dot;
+                    theta2 = [uav.J(1,1);uav.J(2,2);uav.J(3,3);uav.J(1,2);uav.J(1,3);uav.J(2,3)];
+                    Y2 = [ -o_b(1) ,-W_now(2)*W_now(3) ,W_now(2)*W_now(3) ,-o_b(2)-W_now(1)*W_now(3) ,-o_b(3)+W_now(1)*W_now(2), -W_now(3)^2 + W_now(2)^2 ;...
+                           W_now(1)*W_now(3), -o_b(2) ,-W_now(1)*W_now(3) ,-o_b(1)+W_now(2)*W_now(3) ,-W_now(1)^2 + W_now(3)^2 , -o_b(3)-W_now(1)*W_now(2);...
+                           -W_now(1)*W_now(2) ,W_now(1)*W_now(2), -o_b(3) ,-W_now(2)^2 + W_now(1)^2  ,-o_b(1)-W_now(2)*W_now(3), -o_b(2)+W_now(1)*W_now(3)];
+                       Y = [Y2,Y1];
+                       
+                       obj.theta_hat_dot1 = -obj.gamma*Y'*(eW+obj.c2*eR);  
+                       obj.theta3 = obj.theta3 + obj.theta_hat_dot1;
+                       obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta3;
+%                      result = Y2*theta2- (cross(W_now,uav.J*W_now) - uav.J*o_b)
+%                      obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*o_b + Y1*obj.theta;
+%                     theta_hat_dot = -obj.gamma*Y1'*(eW+obj.c2*eR);  
+%                     obj.theta = obj.theta + theta_hat_dot;
                     disp("theta")
-                    disp(obj.theta);
+                    disp(obj.theta3);
                 elseif type == "ICL"
                     Y = [   0   -obj.last_f  ;...
                             obj.last_f   0   ;...
