@@ -7,31 +7,21 @@ classdef controller
          
           M = [0;0;0];
          %% adaptive
-           theta3 = [0;0;0;0;0;0;0;0];
-          theta = [0;0];
-         gamma =  diag([0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.00001,0.00001]);
+          theta = [0.01;0.01;0.01;-0.0005;-0.002;0.001;0;0];
+%           gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.1;
+
+         gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.5;
 %         gamma = 0;
          c2 = 20
         %% ICL
         last_W= [0;0;0];
         last_f =0;
         last_R = [1 0 0;0 1 0;0 0 1]
-        integral_times_discrete ;
-        k_icl = 0;
-        N = 20;
-        y_i;
+%         k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216])*100;
+        k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216]);
+        N = 20;      
         
-        y;
-        y_omega;
-        M_hat;
-        
-        Y_array;
-        Y_omega_array;
-        M_array;
-        W_array;
-        R_array;
-        theta_hat_dot;
-        theta_hat_dot1;
+        theta_hat_dot= [0;0;0;0;0;0;0;0];
         
         sigma_y_array;
         sigma_y_omega_array;
@@ -50,7 +40,7 @@ classdef controller
                     - 3 * dot(q, q_dot)^2 * q/ nq^5;
 
               end
-              function [theta_hat_dot,control,ex,ev,eR,eW,obj] = geometric_tracking_ctrl(obj,iteration,uav,desired,type)
+              function [control,ex,ev,eR,eW,obj] = geometric_tracking_ctrl(obj,iteration,uav,desired,type)
                 desired_p = desired(:,1);
                 desired_v = desired(:,2);
                 desired_a = desired(:,3);     
@@ -118,34 +108,32 @@ classdef controller
                 
                 
                 if type == "origin"
-                    theta_hat_dot = [0;0];
                     obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot);
                 elseif type == "EMK"
-                    theta_hat_dot = [0;0];
                     obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*(W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot) + f*[-uav.pc_2_mc(2);uav.pc_2_mc(1);0];
                 elseif type == "adaptive"
-                    theta_hat_dot = [0;0];
                     o_b = W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot; %omega_bar
                     Y1 = [   0   -f  ;...
                             f   0   ;...
                             0   0   ];
-                    theta2 = [uav.J(1,1);uav.J(2,2);uav.J(3,3);uav.J(1,2);uav.J(1,3);uav.J(2,3)];
+                    theta2 = [uav.J(1,1);uav.J(2,2);uav.J(3,3);uav.J(1,2);uav.J(1,3);uav.J(2,3);uav.pc_2_mc(1);uav.pc_2_mc(2)];
                     Y2 = [ -o_b(1) ,-W_now(2)*W_now(3) ,W_now(2)*W_now(3) ,-o_b(2)-W_now(1)*W_now(3) ,-o_b(3)+W_now(1)*W_now(2), -W_now(3)^2 + W_now(2)^2 ;...
                            W_now(1)*W_now(3), -o_b(2) ,-W_now(1)*W_now(3) ,-o_b(1)+W_now(2)*W_now(3) ,-W_now(1)^2 + W_now(3)^2 , -o_b(3)-W_now(1)*W_now(2);...
                            -W_now(1)*W_now(2) ,W_now(1)*W_now(2), -o_b(3) ,-W_now(2)^2 + W_now(1)^2  ,-o_b(1)-W_now(2)*W_now(3), -o_b(2)+W_now(1)*W_now(3)];
                        Y = [Y2,Y1];
                        
-                       obj.theta_hat_dot1 = -obj.gamma*Y'*(eW+obj.c2*eR);  
-                       obj.theta3 = obj.theta3 + obj.theta_hat_dot1;
-                       obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta3;
-%                      result = Y2*theta2- (cross(W_now,uav.J*W_now) - uav.J*o_b)
-%                      obj.M = -obj.kR * eR - obj.kW*eW + cross(W_now,uav.J*W_now) - uav.J*o_b + Y1*obj.theta;
-%                     theta_hat_dot = -obj.gamma*Y1'*(eW+obj.c2*eR);  
-%                     obj.theta = obj.theta + theta_hat_dot;
-                    disp("theta")
-                    disp(obj.theta3);
+                       obj.theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
+%                        disp(size( obj.theta_hat_dot));
+                       obj.theta = obj.theta + obj.theta_hat_dot;
+
+                       obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta;
+%                      result = Y*theta2- (cross(W_now,uav.J*W_now) - uav.J*o_b+ f*[-uav.pc_2_mc(2);uav.pc_2_mc(1);0])
+%                         result = Y*obj.theta - Y*theta2
+%                     disp("theta")
+%                     disp(obj.theta);
                 elseif type == "ICL"
-                    theta_hat_dot = [0;0];
+                    theta2 = [uav.J(1,1);uav.J(2,2);uav.J(3,3);uav.J(1,2);uav.J(1,3);uav.J(2,3);uav.pc_2_mc(1);uav.pc_2_mc(2)];
+
                     o_b = W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot; %omega_bar
                     Y1 = [   0   -obj.last_f  ;...
                             obj.last_f   0   ;...
@@ -154,19 +142,22 @@ classdef controller
                            W_now(1)*W_now(3), -o_b(2) ,-W_now(1)*W_now(3) ,-o_b(1)+W_now(2)*W_now(3) ,-W_now(1)^2 + W_now(3)^2 , -o_b(3)-W_now(1)*W_now(2);...
                            -W_now(1)*W_now(2) ,W_now(1)*W_now(2), -o_b(3) ,-W_now(2)^2 + W_now(1)^2  ,-o_b(1)-W_now(2)*W_now(3), -o_b(2)+W_now(1)*W_now(3)];
                    Y = [Y2,Y1];
+%                    Y*theta2 - (cross(W_now,uav.J*W_now) - uav.J*o_b+ obj.last_f*[-uav.pc_2_mc(2);uav.pc_2_mc(1);0])
                    Y_omega = [ 0                   ,-W_now(2)*W_now(3) ,W_now(2)*W_now(3)             ,-W_now(1)*W_now(3)      ,W_now(1)*W_now(2)          , -W_now(3)^2 + W_now(2)^2 ;...
-                                W_now(1)*W_now(3)   , 0                 ,-W_now(1)*W_now(3)            , W_now(2)*W_now(3)      ,-W_now(1)^2 + W_now(3)^2   , W_now(1)*W_now(2);...
+                                W_now(1)*W_now(3)   , 0                 ,-W_now(1)*W_now(3)            , W_now(2)*W_now(3)      ,-W_now(1)^2 + W_now(3)^2   , -W_now(1)*W_now(2);...
                                 -W_now(1)*W_now(2)  ,W_now(1)*W_now(2)  , 0                            ,-W_now(2)^2 + W_now(1)^2,-W_now(2)*W_now(3)         , W_now(1)*W_now(3)];
-                   W_dot = W_now-obj.last_W;
-                   W_dot_matrix = [W_dot(1) ,0        ,0          ,W_dot(2) ,W_dot(3),0       ;...
-                                       0        , W_dot(2),0          ,W_dot(1) ,0       ,W_dot(3);...
-                                       0        , 0       ,    W_dot(3),0        ,W_dot(1),W_dot(2)];
-%                    ((uav.J*(X_new(end, 16:18)'-uav.W(:, i-1)) + uav.dt*cross(uav.W(:, i-1),uav.J*uav.W(:, i-1))) - uav.dt*control_output(2:4)) / (uav.dt*f)
-%                    (uav.J*(W_now - obj.last_W) + uav.dt*cross(obj.last_W,uav.J*obj.last_W) - obj.M*uav.dt)/  (uav.dt*obj.last_f)
+                   W_dot = (W_now-obj.last_W);
+                   
+                   W_dot_matrix = [W_dot(1)     ,0        ,0            ,W_dot(2) ,W_dot(3),0       ;...
+                                       0        , W_dot(2),0            ,W_dot(1) ,0       ,W_dot(3);...
+                                       0        , 0       ,    W_dot(3) ,0        ,W_dot(1),W_dot(2)];
+                                   
                     M_bar = obj.M*uav.dt;
                     y_W = Y_omega*uav.dt + W_dot_matrix;
-                    y_cl = [y_W,Y1];
-                    if iteration > obj.integral_times_discrete
+                    y_cl = [y_W,Y1*uav.dt];
+                    
+%                     (cross(W_now,uav.J*W_now)*uav.dt+uav.J*W_dot) - y_cl(:,1:6)*theta2(1:6)
+                    if iteration > obj.N
                         for i= 1:obj.N-1
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
                             obj.sigma_y_array(:,:,i) = obj.sigma_y_array(:,:,i+1);
@@ -177,10 +168,10 @@ classdef controller
 
                         x = zeros(8,1);
                         for i=2:obj.N
-                                x = x + obj.sigma_y_array(:,:,i)'*(obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(:,:,i)*obj.theta3 );
-%                                 disp(obj.sigma_y_array(:,:,i)'*(obj.sigma_M_hat_array(:,i)- obj.sigma_y_omega_array(:,i)  - obj.sigma_y_array(:,:,i)*[uav.pc_2_mc(1);uav.pc_2_mc(2)]))
+                                x = x + obj.sigma_y_array(:,:,i)'*(obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(:,:,i)*obj.theta );
+%                                 disp(obj.sigma_M_hat_array(:,i) - obj.sigma_y_array(:,:,i)*obj.theta)
                         end
-                         obj.theta_hat_dot1 = -obj.gamma*Y'*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
+                         obj.theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR) + obj.gamma*obj.k_icl * x;
                            %disp('theta hat dot')
                            %disp(theta_hat_dot)
                     else
@@ -191,14 +182,14 @@ classdef controller
                         
                         obj.sigma_M_hat_array(:,obj.N) = M_bar;
                         obj.sigma_y_array(:,:,obj.N) = y_cl;
-                        obj.theta_hat_dot1 = -obj.gamma*Y'*(eW+obj.c2*eR);  
+                        obj.theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
                     end
                     obj.last_W = W_now;
                     obj.last_f = f;
                     obj.last_R = R_now;
-                    obj.theta3 = obj.theta3 + obj.theta_hat_dot1 ;
-                    disp(obj.theta3)
-                    obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta3;
+                    obj.theta = obj.theta + obj.theta_hat_dot ;
+%                     disp(obj.theta)
+                    obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta;
                 end
 %                 disp("M")
 %                 disp(M);
