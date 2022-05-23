@@ -5,7 +5,7 @@ addpath('geometry-toolbox')
 %% set drone parameters
 % simulation time
 dt = 1/400;
-sim_t = 20;
+sim_t = 10;
 
 uav = drone_dynamic;
 uav.dt = dt;            %delta t
@@ -14,8 +14,8 @@ uav.t = 0:dt:sim_t;     %every time stamps
 
 uav.d = 0.2;            %wing span
 uav.m = 1.15;
-uav.J = [0.0131, 0.0002, -0.0015;
-         0.0002, 0.0131, 0.0002;
+uav.J = [0.0131, -0.0002, -0.0015;
+         -0.0002, 0.0131, 0.0002;
          -0.0015, 0.0002, 0.0244];
 uav.J_diag = diag([0.0131,0.0131,0.0244]);
 uav.allocation_matrix = cal_allocation_matrix(uav.d, uav.c_tau);
@@ -97,7 +97,7 @@ control.y = zeros(3,2);
 control.y_omega = zeros(3,1);
 control.M_hat = zeros(3,1);
 
-control.Y_array = zeros(3,2,control.integral_times_discrete);
+control.Y_array = zeros(3,8,control.integral_times_discrete);
 control.Y_omega_array = zeros(3,control.integral_times_discrete);
 control.M_array = zeros(3,control.integral_times_discrete);
 control.W_array = zeros(3,control.integral_times_discrete);
@@ -106,7 +106,7 @@ control.R_array = zeros(3,3,control.integral_times_discrete);
 
 control.sigma_M_hat_array = zeros(3,control.N);
 control.sigma_y_omega_array = zeros(3,control.N);
-control.sigma_y_array = zeros(3,2,control.N);
+control.sigma_y_array = zeros(3,8,control.N);
 
 disp("integral times")
 disp(control.integral_times_discrete)
@@ -130,7 +130,7 @@ traj = trajectory;
 %% start iteration
 
 traj_type = "circle";   %"circle","position"
-controller_type = "adaptive";   %"origin","EMK","adaptive","ICL"
+controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
 
 
 for i = 2:length(uav.t)
