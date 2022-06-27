@@ -91,7 +91,7 @@ controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
 control_output_uav1  = zeros(4,1);
 control_output_uav2  = zeros(4,1);
 % control_uav1.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.5;
-control_uav2.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.5;
+control_uav2.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001]);
 for i = 2:length(uav1.t)
     disp(i)
     t_now = uav1.t(i);
