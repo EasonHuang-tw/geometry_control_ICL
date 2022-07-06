@@ -91,7 +91,7 @@ controller_type = "ICL";   %"origin","EMK","adaptive","ICL"
 control_output_uav1  = zeros(4,1);
 control_output_uav2  = zeros(4,1);
 % control_uav1.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.5;
-control_uav2.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001]);
+control_uav2.gamma =  diag([0.00005,0.00005,0.00005,0.00005,0.00005,0.00005,0.00001,0.00001])*0.5;
 for i = 2:length(uav1.t)
     disp(i)
     t_now = uav1.t(i);
@@ -184,122 +184,169 @@ end
 figure('Name','linear result');
 
 subplot(3,2,1);
-plot(uav1.t(2:end),uav1.x(1,2:end),uav1.t(2:end),desired_x(1,2:end));
-title('position x')
+plot(uav1.t(2:end),uav1.x(1,2:end),"LineWidth",2);
+hold on;
+plot(uav1.t(2:end),desired_x(1,2:end),'--',"LineWidth",2);
+title('$Position\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $X[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -2 2])
-legend({'x','x_d'},'Location','southwest')
+legend('$X$','$X_d$','interpreter','latex','FontSize',24);
 subplot(3,2,2);
-plot(uav1.t(2:end),uav1.ex(1,2:end));
-title('position error x')
+plot(uav1.t(2:end),uav1.ex(1,2:end),"LineWidth",2);
+title('$Position\ Error\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $eX[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.5])
 
 subplot(3,2,3);
-plot(uav1.t(2:end),uav1.x(2,2:end),uav1.t(2:end),desired_x(2,2:end));
-title('position y')
+plot(uav1.t(2:end),uav1.x(2,2:end),"LineWidth",2);
+hold on;
+plot(uav1.t(2:end),desired_x(2,2:end),'--',"LineWidth",2);
+title('$Position\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $Y[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -2 2])
-legend({'y','y_d'},'Location','southwest')
+legend('$Y$','$Y_d$','interpreter','latex','FontSize',24);
 subplot(3,2,4);
-plot(uav1.t(2:end),uav1.ex(2,2:end));
-title('position error y')
+plot(uav1.t(2:end),uav1.ex(2,2:end),"LineWidth",2);
+title('$Position\ Error\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $eY[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.5])
 
 subplot(3,2,5);
-plot(uav1.t(2:end),uav1.x(3,2:end),uav1.t(2:end),desired_x(3,2:end));
-title('position z')
+plot(uav1.t(2:end),uav1.x(3,2:end),"LineWidth",2);
+hold on;
+plot(uav1.t(2:end),desired_x(3,2:end),'--',"LineWidth",2);
+title('$Position\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+ylabel(' $Z[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -2 2])
-legend({'z','z_d'},'Location','southwest')
+legend('$Z$','$Z_d$','interpreter','latex','FontSize',24);
 subplot(3,2,6);
-plot(uav1.t(2:end),uav1.ex(3,2:end));
-title('position error z')
+plot(uav1.t(2:end),uav1.ex(3,2:end),"LineWidth",2);
+title('$Position\ Error\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+ylabel(' $eZ[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.5])
 %% rotation
 figure('Name','rotation result');
 
 subplot(3,1,1);
-plot(uav1.t(2:end),uav1.eR(1,2:end));
-title('eR x')
-axis([-inf inf -0.1 0.1])
+plot(uav1.t(2:end),uav1.eR(1,2:end),"LineWidth",2);
+legend('$row\ error$','interpreter','latex','FontSize',24);
+ylabel(' $eR_x[degree]$','interpreter','latex','FontSize',24);
+title('$Attitude\ Errors\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+axis([-inf inf -1 1])
 subplot(3,1,2);
-plot(uav1.t(2:end),uav1.eR(2,2:end));
-title('eR y')
-axis([-inf inf -0.1 0.1])
+plot(uav1.t(2:end),uav1.eR(2,2:end),"LineWidth",2);
+legend('$pitch\ error$','interpreter','latex','FontSize',24);
+ylabel(' $eR_y[degree]$','interpreter','latex','FontSize',24);
+axis([-inf inf -1 1])
 subplot(3,1,3);
-plot(uav1.t(2:end),uav1.eR(3,2:end));
-title('eR z')
-axis([-inf inf -0.1 0.1])
+plot(uav1.t(2:end),uav1.eR(3,2:end),"LineWidth",2);
+legend('$yaw\ error$','interpreter','latex','FontSize',24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+ylabel(' $eR_z[degree]$','interpreter','latex','FontSize',24);
+axis([-inf inf -1 1])
 
 %% theta inertial
 figure('Name','inertia estimation result');
 
 subplot(6,1,1);
-plot(uav1.t(2:end), theta_array_uav1(1,2:end),uav1.t(2:end),real_theta_array_uav1(1,2:end));
-legend({'theta1','theta1_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(1,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(1,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,xx}$','$\theta_{J,xx}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,xx}[kgm^2]$','interpreter','latex','FontSize',12);
+title('$Estimation\ of\ the\ Moment\ of\ Inertia\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
 axis([-inf inf real_theta_array_uav1(1,2)-0.05 real_theta_array_uav1(1,2)+0.05])
-title('theta 1')
 
 subplot(6,1,2);
-plot(uav1.t(2:end), theta_array_uav1(2,2:end),uav1.t(2:end),real_theta_array_uav1(2,2:end));
-legend({'theta2','theta2_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(2,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(2,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,yy}$','$\theta_{J,yy}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,yy}[kgm^2]$','interpreter','latex','FontSize',12);
 axis([-inf inf real_theta_array_uav1(2,2)-0.05 real_theta_array_uav1(2,2)+0.05])
-title('theta 2')
 
 subplot(6,1,3);
-plot(uav1.t(2:end), theta_array_uav1(3,2:end),uav1.t(2:end),real_theta_array_uav1(3,2:end));
-legend({'theta3','theta3_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(3,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(3,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,zz}$','$\theta_{J,zz}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,zz}[kgm^2]$','interpreter','latex','FontSize',12);
 axis([-inf inf real_theta_array_uav1(3,2)-0.05 real_theta_array_uav1(3,2)+0.05])
-title('theta 3')
 
 subplot(6,1,4);
-plot(uav1.t(2:end), theta_array_uav1(4,2:end),uav1.t(2:end),real_theta_array_uav1(4,2:end));
-legend({'theta4','theta4_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(4,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(4,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,xy}$','$\theta_{J,xy}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,xy}[kgm^2]$','interpreter','latex','FontSize',12);
 axis([-inf inf real_theta_array_uav1(4,2)-0.01 real_theta_array_uav1(4,2)+0.01])
-title('theta 4')
 
 subplot(6,1,5);
-plot(uav1.t(2:end), theta_array_uav1(5,2:end),uav1.t(2:end),real_theta_array_uav1(5,2:end));
-legend({'theta5','theta5_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(5,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(5,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,xz}$','$\theta_{J,xz}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,xz}[kgm^2]$','interpreter','latex','FontSize',12);
 axis([-inf inf real_theta_array_uav1(5,2)-0.01 real_theta_array_uav1(5,2)+0.01])
-title('theta 5')
 
 subplot(6,1,6);
-plot(uav1.t(2:end), theta_array_uav1(6,2:end),uav1.t(2:end),real_theta_array_uav1(6,2:end));
-legend({'theta6','theta6_d'},'Location','southwest')
+plot(uav1.t(2:end), theta_array_uav1(6,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(6,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{J,yz}$','$\theta_{J,yz}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{J,yz}[kgm^2]$','interpreter','latex','FontSize',12);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
 axis([-inf inf real_theta_array_uav1(6,2)-0.01 real_theta_array_uav1(6,2)+0.01])
-title('theta 6')
+
 %% theta CoG
 figure('Name','CoG estimation result');
 subplot(2,1,1);
-plot(uav1.t(2:end), theta_array_uav1(7,2:end),uav1.t(2:end),real_theta_array_uav1(7,2:end));
-legend({'theta7','theta7_d'},'Location','southwest')
-title('theta 7')
+plot(uav1.t(2:end), theta_array_uav1(7,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(7,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{{r_{mp}}_x}$','$\theta_{{r_{mp}}_x}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{{r_{mp}}_x}[m]$','interpreter','latex','FontSize',24);
+title('$Estimation\ of\ the\ Center\ of\ Gravity\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
 
 subplot(2,1,2);
-plot(uav1.t(2:end), theta_array_uav1(8,2:end),uav1.t(2:end),real_theta_array_uav1(8,2:end));
-legend({'theta8','theta8_d'},'Location','southwest')
-title('theta 8')
-
+plot(uav1.t(2:end), theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+hold on;
+plot(uav1.t(2:end),real_theta_array_uav1(8,2:end),'--',"LineWidth",2,'Color',[1 0.3 0]);
+hold off;
+legend('$\hat{\theta}_{{r_{mp}}_y}$','$\theta_{{r_{mp}}_y}$','interpreter','latex','FontSize',24);
+ylabel(' $\hat{\theta}_{{r_{mp}}_y}[m]$','interpreter','latex','FontSize',24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
 %% theta_hat_dot
-figure('Name','theta_hat_dot result');
-
-subplot(8,1,1);
-plot(uav1.t(2:end), theta_hat_dot_array_uav1(1,2:end));
-legend({'theta hat dot 1'},'Location','southwest')
-title('theta hat dot 1')
-
-subplot(8,1,2);
-plot(uav1.t(2:end), theta_hat_dot_array_uav1(2,2:end));
-legend({'theta hat dot 2'},'Location','southwest')
-title('theta hat dot 2')
-
-subplot(8,1,3);
-plot(uav1.t(2:end), theta_hat_dot_array_uav1(3,2:end));
-legend({'theta hat dot 3'},'Location','southwest')
-title('theta hat dot 3')
-
-subplot(8,1,4);
-plot(uav1.t(2:end), theta_hat_dot_array_uav1(4,2:end));
-legend({'theta hat dot 4'},'Location','southwest')
-title('theta hat dot 4')
+% figure('Name','theta_hat_dot result');
+% 
+% subplot(8,1,1);
+% plot(uav1.t(2:end), theta_hat_dot_array_uav1(1,2:end));
+% legend({'theta hat dot 1'},'Location','southwest')
+% title('theta hat dot 1')
+% 
+% subplot(8,1,2);
+% plot(uav1.t(2:end), theta_hat_dot_array_uav1(2,2:end));
+% legend({'theta hat dot 2'},'Location','southwest')
+% title('theta hat dot 2')
+% 
+% subplot(8,1,3);
+% plot(uav1.t(2:end), theta_hat_dot_array_uav1(3,2:end));
+% legend({'theta hat dot 3'},'Location','southwest')
+% title('theta hat dot 3')
+% 
+% subplot(8,1,4);
+% plot(uav1.t(2:end), theta_hat_dot_array_uav1(4,2:end));
+% legend({'theta hat dot 4'},'Location','southwest')
+% title('theta hat dot 4')
 
 %% theta_norm_compare
 compare_array_uav1 = zeros(1,length(uav1.t));
@@ -313,30 +360,35 @@ for i = 1:length(uav1.t)
 end
 
 figure('Name','theta_norm_compare');
-plot(uav1.t(2:end),compare_array_uav1(2:end),uav1.t(2:end),compare_array_uav2(2:end));
-legend({'ICL','adaptive'},'Location','southwest')
-set(gca, 'YScale', 'log')
-title('theta_norm_compare')
+plot(uav1.t(2:end),compare_array_uav1(2:end),"LineWidth",2);
+hold on;
+plot(uav1.t(2:end),compare_array_uav2(2:end),"LineWidth",2);
+hold off;
+legend('$\frac{\|\tilde{\theta}\|_{adaptive}}{\|\theta\|}$','$\frac{\|\tilde{\theta}\|_{ICL}}{\|\theta\|}$','interpreter','latex','FontSize',24);
+set(gca, 'YScale', 'log');
+ylabel(' $\frac{\|\tilde{\theta}\|}{\|\theta\|}$','interpreter','latex','FontSize',24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+title('$Estimation\ Errors\ of\ Adaptive\ and\ ICL$','interpreter','latex', 'FontSize', 24);
 
 %% contorl output
-figure('Name','control output result');
-
-subplot(4,1,1);
-plot(uav1.t(2:end), contorl_output_array_uav1(1,2:end));
-legend({'control 1'},'Location','southwest')
-title('control 1')
-
-subplot(4,1,2);
-plot(uav1.t(2:end), contorl_output_array_uav1(2,2:end));
-legend({'control 2'},'Location','southwest')
-title('control 2')
-
-subplot(4,1,3);
-plot(uav1.t(2:end), contorl_output_array_uav1(3,2:end));
-legend({'control 3'},'Location','southwest')
-title('control 3')
-
-subplot(4,1,4);
-plot(uav1.t(2:end), contorl_output_array_uav1(3,2:end));
-legend({'control 4'},'Location','southwest')
-title('control 4')
+% figure('Name','control output result');
+% 
+% subplot(4,1,1);
+% plot(uav1.t(2:end), contorl_output_array_uav1(1,2:end));
+% legend({'control 1'},'Location','southwest')
+% title('control 1')
+% 
+% subplot(4,1,2);
+% plot(uav1.t(2:end), contorl_output_array_uav1(2,2:end));
+% legend({'control 2'},'Location','southwest')
+% title('control 2')
+% 
+% subplot(4,1,3);
+% plot(uav1.t(2:end), contorl_output_array_uav1(3,2:end));
+% legend({'control 3'},'Location','southwest')
+% title('control 3')
+% 
+% subplot(4,1,4);
+% plot(uav1.t(2:end), contorl_output_array_uav1(3,2:end));
+% legend({'control 4'},'Location','southwest')
+% title('control 4')
