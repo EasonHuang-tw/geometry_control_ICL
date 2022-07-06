@@ -364,7 +364,7 @@ plot(uav1.t(2:end),compare_array_uav1(2:end),"LineWidth",2);
 hold on;
 plot(uav1.t(2:end),compare_array_uav2(2:end),"LineWidth",2);
 hold off;
-legend('$\frac{\|\tilde{\theta}\|_{adaptive}}{\|\theta\|}$','$\frac{\|\tilde{\theta}\|_{ICL}}{\|\theta\|}$','interpreter','latex','FontSize',24);
+legend('$\frac{\|\tilde{\theta}\|_{ICL}}{\|\theta\|}$','$\frac{\|\tilde{\theta}\|_{adaptive}}{\|\theta\|}$','interpreter','latex','FontSize',24);
 set(gca, 'YScale', 'log');
 ylabel(' $\frac{\|\tilde{\theta}\|}{\|\theta\|}$','interpreter','latex','FontSize',24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
