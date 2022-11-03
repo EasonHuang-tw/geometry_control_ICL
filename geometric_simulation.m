@@ -64,6 +64,7 @@ control_uav1.sigma_y_omega_array = zeros(3,control_uav1.N);
 control_uav1.sigma_y_array = zeros(3,8,control_uav1.N);
 
 control_uav2 = control_uav1;
+% control_uav2.theta = [0;0;0.05;0.06;0.07;-0.005;-0.006;0.004];
 %% create trajectory
 traj_array = zeros(12, length(uav1.t));
 traj = trajectory;
@@ -100,7 +101,7 @@ for i = 2:length(uav1.t)
     desired_v(:,i) = desired(:,2);
     % calculate control force
     [control_output_uav1, uav1.ex(:, i), uav1.ev(:, i), uav1.eR(:, i), uav1.eW(:, i),control_uav1] = control_uav1.geometric_tracking_ctrl(i,uav1,desired,controller_type);
-    [control_output_uav2, uav2.ex(:, i), uav2.ev(:, i), uav2.eR(:, i), uav2.eW(:, i),control_uav2] = control_uav2.geometric_tracking_ctrl(i,uav2,desired,'adaptive');
+    [control_output_uav2, uav2.ex(:, i), uav2.ev(:, i), uav2.eR(:, i), uav2.eW(:, i),control_uav2] = control_uav2.geometric_tracking_ctrl(i,uav2,desired,'EMK');
 
     % calculate real force applied on the drone
     real_theta_array_uav1(:,i) = [uav1.J(1,1),uav1.J(2,2),uav1.J(3,3),uav1.J(1,2),uav1.J(1,3),uav1.J(2,3),uav1.pc_2_mc(1),uav1.pc_2_mc(2)];
@@ -191,15 +192,15 @@ plot(uav1.t(2:end),uav1.x(1,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_x(1,2:end),'--',"LineWidth",2);
-title('$Position\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
+title('$Position\ in\ X\ Direction$','interpreter','latex', 'FontSize', font);
 ylabel(' $X[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -2 2])
 legend('$X$','$X_d$','interpreter','latex','FontSize',font);
 subplot(3,2,2);
 plot(uav1.t(2:end),uav1.ex(1,2:end),"LineWidth",2);
 grid on;
-title('$Position\ Error\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
-ylabel(' $eX[m]$','interpreter','latex','FontSize',font);
+title('$Position\ Error\ in\ X\ Direction$','interpreter','latex', 'FontSize', font);
+ylabel(' $e_X[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -0.5 0.5])
 
 subplot(3,2,3);
@@ -207,15 +208,15 @@ plot(uav1.t(2:end),uav1.x(2,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_x(2,2:end),'--',"LineWidth",2);
-title('$Position\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
+title('$Position\ in\ Y\ Direction$','interpreter','latex', 'FontSize', font);
 ylabel(' $Y[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -2 2])
 legend('$Y$','$Y_d$','interpreter','latex','FontSize',font);
 subplot(3,2,4);
 plot(uav1.t(2:end),uav1.ex(2,2:end),"LineWidth",2);
 grid on;
-title('$Position\ Error\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
-ylabel(' $eY[m]$','interpreter','latex','FontSize',font);
+title('$Position\ Error\ in\ Y\ Direction$','interpreter','latex', 'FontSize', font);
+ylabel(' $e_Y[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -0.5 0.5])
 
 subplot(3,2,5);
@@ -223,7 +224,7 @@ plot(uav1.t(2:end),uav1.x(3,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_x(3,2:end),'--',"LineWidth",2);
-title('$Position\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
+title('$Position\ in\ Z\ Direction$','interpreter','latex', 'FontSize', font);
 xlabel(' $t[s]$','interpreter','latex','FontSize',font);
 ylabel(' $Z[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -2 2])
@@ -231,9 +232,9 @@ legend('$Z$','$Z_d$','interpreter','latex','FontSize',font);
 subplot(3,2,6);
 plot(uav1.t(2:end),uav1.ex(3,2:end),"LineWidth",2);
 grid on;
-title('$Position\ Error\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', font);
+title('$Position\ Error\ in\ Z\ Direction$','interpreter','latex', 'FontSize', font);
 xlabel(' $t[s]$','interpreter','latex','FontSize',font);
-ylabel(' $eZ[m]$','interpreter','latex','FontSize',font);
+ylabel(' $e_Z[m]$','interpreter','latex','FontSize',font);
 axis([-inf inf -0.5 0.5])
 %% velocity
 figure('Name','linear velocity result');
@@ -242,15 +243,15 @@ plot(uav1.t(2:end),uav1.v(1,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_v(1,2:end),'--',"LineWidth",2);
-title('$Velocity\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
-ylabel(' $VX[m/s]$','interpreter','latex','FontSize',24);
+title('$Velocity\ in\ X\ Direction$','interpreter','latex', 'FontSize', 24);
+ylabel(' $v_X[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -4 4])
-legend('$VX$','$VX_d$','interpreter','latex','FontSize',24);
+legend('$v_X$','$v_{X_d}$','interpreter','latex','FontSize',24);
 subplot(3,2,2);
 plot(uav1.t(2:end),uav1.ev(1,2:end),"LineWidth",2);
 grid on;
-title('$Velocity\ Error\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
-ylabel(' $eVX[m/s]$','interpreter','latex','FontSize',24);
+title('$Velocity\ Error\ in\ X\ Direction$','interpreter','latex', 'FontSize', 24);
+ylabel(' $e_{v_X}[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1.5 1.5])
 
 subplot(3,2,3);
@@ -258,15 +259,15 @@ plot(uav1.t(2:end),uav1.v(2,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_v(2,2:end),'--',"LineWidth",2);
-title('$Velocity\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
-ylabel(' $VY[m/s]$','interpreter','latex','FontSize',24);
+title('$Velocity\ in\ Y\ Direction$','interpreter','latex', 'FontSize', 24);
+ylabel(' $v_Y[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -4 4])
-legend('$VY$','$VY_d$','interpreter','latex','FontSize',24);
+legend('$v_Y$','$v_{Y_d}$','interpreter','latex','FontSize',24);
 subplot(3,2,4);
 plot(uav1.t(2:end),uav1.ev(2,2:end),"LineWidth",2);
 grid on;
-title('$Velocity\ Error\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
-ylabel(' $eVY[m/s]$','interpreter','latex','FontSize',24);
+title('$Velocity\ Error\ in\ Y\ Direction$','interpreter','latex', 'FontSize', 24);
+ylabel(' $e_{v_Y}[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1.5 1.5])
 
 subplot(3,2,5);
@@ -274,17 +275,17 @@ plot(uav1.t(2:end),uav1.v(3,2:end),"LineWidth",2);
 grid on;
 hold on;
 plot(uav1.t(2:end),desired_v(3,2:end),'--',"LineWidth",2);
-title('$Velocity\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Velocity\ in\ Z\ Direction$','interpreter','latex', 'FontSize', 24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $VZ[m/s]$','interpreter','latex','FontSize',24);
+ylabel(' $v_Z[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -4 4])
-legend('$VZ$','$VZ_d$','interpreter','latex','FontSize',24);
+legend('$v_Z$','$v_{Z_d}$','interpreter','latex','FontSize',24);
 subplot(3,2,6);
 plot(uav1.t(2:end),uav1.ev(3,2:end),"LineWidth",2);
 grid on;
-title('$Velocity\ Error\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Velocity\ Error\ in\ Z\ Direction$','interpreter','latex', 'FontSize', 24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $eVZ[m/s]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{v_Z}[m/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1 1])
 %% rotation
 %% Attitude
@@ -293,21 +294,21 @@ figure('Name','rotation result');
 subplot(3,1,1);
 plot(uav1.t(2:end),uav1.eR(1,2:end),"LineWidth",2);
 grid on;
-ylabel(' $eR_x[rad]$','interpreter','latex','FontSize',24);
-title('$Attitude\ Errors\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $e_{R_x}[rad]$','interpreter','latex','FontSize',24);
+title('$Attitude\ Errors$','interpreter','latex', 'FontSize', 24);
 axis([-inf inf -1 1])
 subplot(3,1,2);
 
 plot(uav1.t(2:end),uav1.eR(2,2:end),"LineWidth",2);
 grid on;
-ylabel(' $eR_y[rad]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{R_y}[rad]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1 1])
 subplot(3,1,3);
 
 plot(uav1.t(2:end),uav1.eR(3,2:end),"LineWidth",2);
 grid on;
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $eR_z[rad]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{R_z}[rad]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1 1])
 %% angular velocity
 figure('Name','rotation result');
@@ -315,21 +316,23 @@ figure('Name','rotation result');
 subplot(3,1,1);
 plot(uav1.t(2:end),uav1.eR(1,2:end),"LineWidth",2);
 grid on;
-ylabel(' $eW_x[rad/s]$','interpreter','latex','FontSize',24);
-title('$Angular\ velocity\ Errors\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+ylabel(' $e_{\Omega_x}[rad/s]$','interpreter','latex','FontSize',24);
+title('$Angular\ velocity\ Errors$','interpreter','latex', 'FontSize', 24);
 axis([-inf inf -1 1])
 subplot(3,1,2);
 plot(uav1.t(2:end),uav1.eR(2,2:end),"LineWidth",2);
 grid on;
-ylabel(' $eW_y[rad/s]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{\Omega_y}[rad/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1 1])
 subplot(3,1,3);
 plot(uav1.t(2:end),uav1.eR(3,2:end),"LineWidth",2);
 grid on;
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $eW_z[rad/s]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{\Omega_z}[rad/s]$','interpreter','latex','FontSize',24);
 axis([-inf inf -1 1])
 %% theta inertial
+show = "show error";%'show error' 'show value'
+if (show == "show value")
 figure('Name','inertia estimation result');
 
 subplot(6,1,1);
@@ -340,7 +343,7 @@ plot(uav1.t(2:end),real_theta_array_uav1(1,2:end),'--',"LineWidth",2,'Color',[1 
 hold off;
 legend('$\hat{\theta}_{J,xx}$','$\theta_{J,xx}$','interpreter','latex','FontSize',24);
 ylabel(' $\hat{\theta}_{J,xx}[kgm^2]$','interpreter','latex','FontSize',16);
-title('$Estimation\ of\ the\ Moment\ of\ Inertia\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Estimation\ of\ the\ MoI$','interpreter','latex', 'FontSize', 24);
 axis([-inf inf real_theta_array_uav1(1,2)-0.05 real_theta_array_uav1(1,2)+0.05])
 
 subplot(6,1,2);
@@ -404,7 +407,7 @@ plot(uav1.t(2:end),real_theta_array_uav1(7,2:end),'--',"LineWidth",2,'Color',[1 
 hold off;
 legend('$\hat{\theta}_{r_{M/B_{x}}}$','$\theta_{r_{M/B_{x}}}$','interpreter','latex','FontSize',24);
 ylabel(' $\hat{\theta}_{r_{M/B_{x}}}[kgm^2]$','interpreter','latex','FontSize',24);
-title('$Estimation\ of\ the\ Center\ of\ Gravity\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Estimation\ of\ the\ CoG$','interpreter','latex', 'FontSize', 24);
 
 subplot(2,1,2);
 plot(uav1.t(2:end), theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 1]);
@@ -415,7 +418,67 @@ hold off;
 legend('$\hat{\theta}_{r_{M/B_{y}}}$','$\theta_{r_{M/B_{y}}}$','interpreter','latex','FontSize',24);
 ylabel(' $\hat{\theta}_{r_{M/B_{y}}}[kgm^2]$','interpreter','latex','FontSize',24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+else
+ %% theta inertial
+figure('Name','inertia estimation result');
+
+subplot(6,1,1);
+plot(uav1.t(2:end), real_theta_array_uav1(1,2:end)-theta_array_uav1(1,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,xx}[kgm^2]$','interpreter','latex','FontSize',16);
+title('$Estimation\ Errors\ of\ the\ MoI$','interpreter','latex', 'FontSize', 24);
+axis([-inf inf -0.1 0.1])
+
+
+subplot(6,1,2);
+plot(uav1.t(2:end), real_theta_array_uav1(2,2:end)-theta_array_uav1(2,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,yy}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,3);
+plot(uav1.t(2:end), real_theta_array_uav1(3,2:end)-theta_array_uav1(3,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,zz}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,4);
+plot(uav1.t(2:end), theta_array_uav1(4,2:end)-real_theta_array_uav1(4,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,xy}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,5);
+plot(uav1.t(2:end), theta_array_uav1(5,2:end)-real_theta_array_uav1(5,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,xz}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,6);
+plot(uav1.t(2:end), theta_array_uav1(6,2:end)-real_theta_array_uav1(6,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{J,yz}[kgm^2]$','interpreter','latex','FontSize',16);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+axis([-inf inf -0.1 0.1])
+
+%% theta CoG
+figure('Name','CoG estimation result');
+subplot(2,1,1);
+plot(uav1.t(2:end), theta_array_uav1(7,2:end)-real_theta_array_uav1(7,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{r_{M/B_{x}}}[kgm^2]$','interpreter','latex','FontSize',24);
+title('$Estimation\ Errors\ of\ the\ CoG$','interpreter','latex', 'FontSize', 24);
+axis([-inf inf -0.1 0.1])
+
+subplot(2,1,2);
+plot(uav1.t(2:end), theta_array_uav1(8,2:end)-real_theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+ylabel(' $\tilde{\theta}_{r_{M/B_{y}}}[kgm^2]$','interpreter','latex','FontSize',24);
+xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+axis([-inf inf -0.1 0.1])
+end
 %% theta inertial ICL vs adaptive
+if (show == "show value")
 figure('Name','inertia estimation result');
 
 subplot(6,1,1);
@@ -428,7 +491,7 @@ plot(uav1.t(2:end),real_theta_array_uav1(1,2:end),'--',"LineWidth",2,'Color',[1 
 hold off;
 legend('$\hat{\theta}_{J,xx}(ICL)$','$\hat{\theta}_{J,xx}(adaptive)$','$\theta_{J,xx}$','interpreter','latex','FontSize',16);
 ylabel(' $\hat{\theta}_{J,xx}[kgm^2]$','interpreter','latex','FontSize',16);
-title('$Estimation\ of\ the\ Moment\ of\ Inertia\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Estimation\ of\ the\ MoI$','interpreter','latex', 'FontSize', 24);
 axis([-inf inf real_theta_array_uav1(1,2)-0.05 real_theta_array_uav1(1,2)+0.05])
 
 subplot(6,1,2);
@@ -503,7 +566,7 @@ plot(uav1.t(2:end),real_theta_array_uav1(7,2:end),'--',"LineWidth",2,'Color',[1 
 hold off;
 legend('$\hat{\theta}_{r_{M/B_{x}}}(ICL)$','$\hat{\theta}_{r_{M/B_{x}}}(adaptive)$','$\theta_{r_{M/B_{x}}}$','interpreter','latex','FontSize',24);
 ylabel(' $\hat{\theta}_{r_{M/B_{x}}}[kgm^2]$','interpreter','latex','FontSize',24);
-title('$Estimation\ of\ the\ Center\ of\ Gravity\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Estimation\ of\ the\ CoG$','interpreter','latex', 'FontSize', 24);
 
 subplot(2,1,2);
 plot(uav1.t(2:end), theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 1]);
@@ -516,6 +579,93 @@ hold off;
 legend('$\hat{\theta}_{r_{M/B_{y}}}(ICL)$','$\hat{\theta}_{r_{M/B_{y}}}(adaptive)$','$\theta_{r_{M/B_{x}}}$','interpreter','latex','FontSize',24);
 ylabel(' $\hat{\theta}_{r_{M/B_{y}}}[kgm^2]$','interpreter','latex','FontSize',24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
+else
+%% theta inertial ICL vs adaptive
+figure('Name','inertia estimation result');
+
+subplot(6,1,1);
+plot(uav1.t(2:end), theta_array_uav1(1,2:end)-real_theta_array_uav1(1,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(1,2:end)-real_theta_array_uav1(1,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,xx}(ICL)$','$\tilde{\theta}_{J,xx}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,xx}[kgm^2]$','interpreter','latex','FontSize',16);
+title('$Estimation\ Errors\ of\ the\ MoI$','interpreter','latex', 'FontSize', 24);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,2);
+plot(uav1.t(2:end), theta_array_uav1(2,2:end)-real_theta_array_uav1(2,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(2,2:end)-real_theta_array_uav1(2,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,yy}(ICL)$','$\tilde{\theta}_{J,yy}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,yy}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,3);
+plot(uav1.t(2:end), theta_array_uav1(3,2:end)-real_theta_array_uav1(3,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(3,2:end)-real_theta_array_uav1(3,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,zz}(ICL)$','$\tilde{\theta}_{J,zz}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,zz}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,4);
+plot(uav1.t(2:end), theta_array_uav1(4,2:end)-real_theta_array_uav1(4,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(4,2:end)-real_theta_array_uav1(4,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,xy}(ICL)$','$\tilde{\theta}_{J,xy}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,xy}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,5);
+plot(uav1.t(2:end), theta_array_uav1(5,2:end)-real_theta_array_uav1(5,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(5,2:end)-real_theta_array_uav1(5,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,xz}(ICL)$','$\tilde{\theta}_{J,xz}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,xz}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+
+subplot(6,1,6);
+plot(uav1.t(2:end), theta_array_uav1(6,2:end)-real_theta_array_uav1(6,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(6,2:end)-real_theta_array_uav1(6,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{J,yz}(ICL)$','$\tilde{\theta}_{J,yz}(adaptive)$','interpreter','latex','FontSize',16);
+ylabel(' $\tilde{\theta}_{J,yz}[kgm^2]$','interpreter','latex','FontSize',16);
+axis([-inf inf -0.1 0.1])
+%% theta CoG ICL vs adaptive
+figure('Name','CoG estimation result');
+subplot(2,1,1);
+plot(uav1.t(2:end), theta_array_uav1(7,2:end)-real_theta_array_uav1(7,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(7,2:end)-real_theta_array_uav1(7,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{r_{M/B_{x}}}(ICL)$','$\tilde{\theta}_{r_{M/B_{x}}}(adaptive)$','interpreter','latex','FontSize',24);
+ylabel(' $\tilde{\theta}_{r_{M/B_{x}}}[kgm^2]$','interpreter','latex','FontSize',24);
+title('$Estimation\ Errors\ of\ the\ CoG$','interpreter','latex', 'FontSize', 24);
+axis([-inf inf -0.1 0.1])
+
+subplot(2,1,2);
+plot(uav1.t(2:end), theta_array_uav1(8,2:end)-real_theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 1]);
+grid on;
+hold on;
+plot(uav1.t(2:end), theta_array_uav2(8,2:end)-real_theta_array_uav1(8,2:end),"LineWidth",2,'Color',[0 0.5 0.4]);
+hold off;
+legend('$\tilde{\theta}_{r_{M/B_{y}}}(ICL)$','$\tilde{\theta}_{r_{M/B_{y}}}(adaptive)$','interpreter','latex','FontSize',24);
+ylabel(' $\tilde{\theta}_{r_{M/B_{y}}}[kgm^2]$','interpreter','latex','FontSize',24);
+axis([-inf inf -0.1 0.1])
+end
 %% position error between uav1 and uav2
 figure('Name','linear result');
 subplot(3,1,1);
@@ -524,9 +674,9 @@ grid on;
 hold on;
 plot(uav2.t(2:end),uav2.ex(1,2:end),"LineWidth",2);
 hold off;
-title('$Position\ Error\ in\ X\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Position\ Error\ in\ X\ Direction$','interpreter','latex', 'FontSize', 24);
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
-ylabel(' $eX[m]$','interpreter','latex','FontSize',24);
+ylabel(' $e_X[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 
 subplot(3,1,2);
@@ -535,9 +685,9 @@ grid on;
 hold on;
 plot(uav2.t(2:end),uav2.ex(2,2:end),"LineWidth",2);
 hold off;
-title('$Position\ Error\ in\ Y\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Position\ Error\ in\ Y\ Direction$','interpreter','latex', 'FontSize', 24);
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
-ylabel(' $eY[m]$','interpreter','latex','FontSize',24);
+ylabel(' $e_Y[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 
 subplot(3,1,3);
@@ -546,10 +696,10 @@ grid on;
 hold on;
 plot(uav2.t(2:end),uav2.ex(3,2:end),"LineWidth",2);
 hold off;
-title('$Position\ Error\ in\ Z\ Direction\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Position\ Error\ in\ Z\ Direction$','interpreter','latex', 'FontSize', 24);
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $eZ[m]$','interpreter','latex','FontSize',24);
+ylabel(' $e_Z[m]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 %% angular error between uav1 and uav2
 figure('Name','linear result');
@@ -559,9 +709,9 @@ grid on;
 hold on;
 plot(uav2.t(2:end),uav2.eR(1,2:end),"LineWidth",2);
 hold off;
-title('$Attitude\ Errors\ of\ ICL\ and\ geometric\ controller\ in\ Simulation$','interpreter','latex', 'FontSize', 24);
+title('$Attitude\ Errors\ of\ ICL\ and\ geometric\ controller$','interpreter','latex', 'FontSize', 24);
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
-ylabel(' $eR_x[rad]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{R_x}[rad]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 
 subplot(3,1,2);
@@ -571,7 +721,7 @@ hold on;
 plot(uav2.t(2:end),uav2.eR(2,2:end),"LineWidth",2);
 hold off;
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
-ylabel(' $eR_y[rad]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{R_y}[rad]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 
 subplot(3,1,3);
@@ -582,7 +732,7 @@ plot(uav2.t(2:end),uav2.eR(3,2:end),"LineWidth",2);
 hold off;
 legend('$ICL\ controller$','$geometric\ controller$','interpreter','latex','FontSize',16);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-ylabel(' $eR_z[rad]$','interpreter','latex','FontSize',24);
+ylabel(' $e_{R_z}[rad]$','interpreter','latex','FontSize',24);
 axis([-inf inf -0.5 0.8])
 %% theta_hat_dot
 % figure('Name','theta_hat_dot result');
@@ -628,7 +778,7 @@ legend('$\frac{\|\tilde{\theta}_{Inertia}\|}{\|\theta\|}$','$\frac{\|\tilde{\the
 set(gca, 'YScale', 'log');
 ylabel(' $\frac{\|\tilde{\theta}\|}{\|\theta\|}$','interpreter','latex','FontSize',24);
 xlabel(' $t[s]$','interpreter','latex','FontSize',24);
-title('$Estimation\ Errors\ of\ Moment\ of\ Inertia\ and\ Center\ of\ Gravity$','interpreter','latex', 'FontSize', 24);
+title('$Estimation\ Errors\ of\ MoI\ and\ CoG$','interpreter','latex', 'FontSize', 24);
 
 %% theta_norm_compare
 compare_array_uav1 = zeros(1,length(uav1.t));

@@ -16,12 +16,27 @@ classdef controller
 %         gamma = 0;
          c2 = 6.5
         %% ICL
+        last_M= [0;0;0];
+        last_M2= [0;0;0];
+        last_M3= [0;0;0];
+        last_M4= [0;0;0];
+        last_M5= [0;0;0];
+        
         last_W= [0;0;0];
+        last_W2= [0;0;0];
+        last_W3= [0;0;0];
+        last_W4= [0;0;0];
+        last_W5= [0;0;0];
         last_f =0;
+        last_f2 =0;
+        last_f3 =0;
+        last_f4 =0;
+        last_f5 =0;
+        
         last_R = [1 0 0;0 1 0;0 0 1]
 %         k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216])*100;
 %         k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216])*90;
-         k_icl =  diag([2200,2220,2220,2220,2220,2220,2220,2220])*200;
+         k_icl =  diag([2200,2220,2220,2220,2220,2220,2220,2220])*200/200;
 %        k_icl = 506000;
         N = 20;      
         
@@ -150,15 +165,21 @@ classdef controller
                    Y_omega = [ 0                   ,-W_now(2)*W_now(3) ,W_now(2)*W_now(3)             ,-W_now(1)*W_now(3)      ,W_now(1)*W_now(2)          , -W_now(3)^2 + W_now(2)^2 ;...
                                 W_now(1)*W_now(3)   , 0                 ,-W_now(1)*W_now(3)            , W_now(2)*W_now(3)      ,-W_now(1)^2 + W_now(3)^2   , -W_now(1)*W_now(2);...
                                 -W_now(1)*W_now(2)  ,W_now(1)*W_now(2)  , 0                            ,-W_now(2)^2 + W_now(1)^2,-W_now(2)*W_now(3)         , W_now(1)*W_now(3)];
-                   W_dot = (W_now-obj.last_W);
+%                    W_dot = (W_now-obj.last_W);
+                   W_dot = (W_now-obj.last_W5);
                    
                    W_dot_matrix = [W_dot(1)     ,0        ,0            ,W_dot(2) ,W_dot(3),0       ;...
                                        0        , W_dot(2),0            ,W_dot(1) ,0       ,W_dot(3);...
                                        0        , 0       ,    W_dot(3) ,0        ,W_dot(1),W_dot(2)];
                                    
-                    M_bar = obj.M*uav.dt;
-                    y_W = Y_omega*uav.dt + W_dot_matrix;
-                    y_cl = [y_W,Y1*uav.dt];
+%                     M_bar = obj.M*uav.dt;
+                    M_bar = obj.last_M5*5*uav.dt;
+                    y_W = Y_omega*5*uav.dt + W_dot_matrix;
+                    Y1_icl = [   0   -obj.last_f5  ;...
+                            obj.last_f5   0   ;...
+                            0   0   ];
+                    y_cl = [y_W,Y1_icl*5*uav.dt];
+%                     y_cl = [y_W,Y1*uav.dt];
                     
 %                     (cross(W_now,uav.J*W_now)*uav.dt+uav.J*W_dot) - y_cl(:,1:6)*theta2(1:6)
                     if iteration > obj.N
@@ -188,11 +209,27 @@ classdef controller
                         obj.sigma_y_array(:,:,obj.N) = y_cl;
                         obj.theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
                     end
+                    obj.last_W5 = obj.last_W4;
+                    obj.last_W4 = obj.last_W3;
+                    obj.last_W3 = obj.last_W2;
+                    obj.last_W2 = obj.last_W;
                     obj.last_W = W_now;
+                    obj.last_f5 = obj.last_f4;
+                    obj.last_f4 = obj.last_f3;
+                    obj.last_f3 = obj.last_f2;
+                    obj.last_f2 = obj.last_f;
                     obj.last_f = f;
                     obj.last_R = R_now;
                     obj.theta = obj.theta + obj.theta_hat_dot ;
                     obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta;
+                    
+                    obj.last_M5 = obj.last_M4;
+                    obj.last_M4 = obj.last_M3;
+                    obj.last_M3 = obj.last_M2;
+                    obj.last_M2 = obj.last_M;
+                    obj.last_M = obj.M;
+                    
+                    
                 end
 %                 disp("M")
 %                 disp(M);
