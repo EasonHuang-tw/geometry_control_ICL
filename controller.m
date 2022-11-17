@@ -16,27 +16,16 @@ classdef controller
 %         gamma = 0;
          c2 = 6.5
         %% ICL
-        last_M= [0;0;0];
-        last_M2= [0;0;0];
-        last_M3= [0;0;0];
-        last_M4= [0;0;0];
-        last_M5= [0;0;0];
-        
-        last_W= [0;0;0];
-        last_W2= [0;0;0];
-        last_W3= [0;0;0];
-        last_W4= [0;0;0];
-        last_W5= [0;0;0];
-        last_f =0;
-        last_f2 =0;
-        last_f3 =0;
-        last_f4 =0;
-        last_f5 =0;
+        Y_icl_last = zeros(3,8,5);
+        M_icl_last = zeros(3,5);
+        f_icl_last = zeros(1,5);
+        last_W = [0;0;0];
+        last_f = 0;
         
         last_R = [1 0 0;0 1 0;0 0 1]
 %         k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216])*100;
 %         k_icl =  diag([2160,2160,2160,2160,2160,2160,216,216])*90;
-         k_icl =  diag([2200,2220,2220,2220,2220,2220,2220,2220])*200/200;
+         k_icl =  diag([2200,2220,2220,2220,2220,2220,2220,2220])*5;
 %        k_icl = 506000;
         N = 20;      
         
@@ -154,9 +143,9 @@ classdef controller
                     theta2 = [uav.J(1,1);uav.J(2,2);uav.J(3,3);uav.J(1,2);uav.J(1,3);uav.J(2,3);uav.pc_2_mc(1);uav.pc_2_mc(2)];
 
                     o_b = W_hat*R_now'*R_c*W_c - R_now'*R_c*W_c_dot; %omega_bar
-                    Y1 = [   0   -obj.last_f  ;...
-                            obj.last_f   0   ;...
-                            0   0   ];
+                    Y1 = [   0   ,-obj.last_f  ;...
+                            obj.last_f   ,0   ;...
+                            0  , 0   ];
                    Y2 = [ -o_b(1) ,-W_now(2)*W_now(3) ,W_now(2)*W_now(3) ,-o_b(2)-W_now(1)*W_now(3) ,-o_b(3)+W_now(1)*W_now(2), -W_now(3)^2 + W_now(2)^2 ;...
                            W_now(1)*W_now(3), -o_b(2) ,-W_now(1)*W_now(3) ,-o_b(1)+W_now(2)*W_now(3) ,-W_now(1)^2 + W_now(3)^2 , -o_b(3)-W_now(1)*W_now(2);...
                            -W_now(1)*W_now(2) ,W_now(1)*W_now(2), -o_b(3) ,-W_now(2)^2 + W_now(1)^2  ,-o_b(1)-W_now(2)*W_now(3), -o_b(2)+W_now(1)*W_now(3)];
@@ -166,20 +155,32 @@ classdef controller
                                 W_now(1)*W_now(3)   , 0                 ,-W_now(1)*W_now(3)            , W_now(2)*W_now(3)      ,-W_now(1)^2 + W_now(3)^2   , -W_now(1)*W_now(2);...
                                 -W_now(1)*W_now(2)  ,W_now(1)*W_now(2)  , 0                            ,-W_now(2)^2 + W_now(1)^2,-W_now(2)*W_now(3)         , W_now(1)*W_now(3)];
 %                    W_dot = (W_now-obj.last_W);
-                   W_dot = (W_now-obj.last_W5);
+                   W_dot = (W_now-obj.last_W);
+                   Y1_icl = [   0   -obj.last_f  ;...
+                            obj.last_f   0   ;...
+                            0   0   ];
                    
                    W_dot_matrix = [W_dot(1)     ,0        ,0            ,W_dot(2) ,W_dot(3),0       ;...
                                        0        , W_dot(2),0            ,W_dot(1) ,0       ,W_dot(3);...
                                        0        , 0       ,    W_dot(3) ,0        ,W_dot(1),W_dot(2)];
                                    
 %                     M_bar = obj.M*uav.dt;
-                    M_bar = obj.last_M5*5*uav.dt;
-                    y_W = Y_omega*5*uav.dt + W_dot_matrix;
-                    Y1_icl = [   0   -obj.last_f5  ;...
-                            obj.last_f5   0   ;...
-                            0   0   ];
-                    y_cl = [y_W,Y1_icl*5*uav.dt];
-%                     y_cl = [y_W,Y1*uav.dt];
+                    M_bar = obj.M*uav.dt;
+                    y_W = Y_omega*uav.dt + W_dot_matrix;
+                    y_cl = [y_W,Y1_icl*uav.dt];
+                    integral_num = 5;
+                    for i= 1:integral_num-1
+                        obj.Y_icl_last(:,:,i+1) = obj.Y_icl_last(:,:,i);
+                        obj.M_icl_last(:,i+1) = obj.M_icl_last(:,i);
+                    end
+                        obj.Y_icl_last(:,:,1) = y_cl;
+                        obj.M_icl_last(:,1) = M_bar;
+                        M_bar_int = zeros(3,1);
+                        y_icl_int = zeros(3,8);
+                   for i= 1:integral_num
+                        y_icl_int = y_icl_int + obj.Y_icl_last(:,:,i);
+                        M_bar_int = M_bar_int + obj.M_icl_last(:,i);
+                   end
                     
 %                     (cross(W_now,uav.J*W_now)*uav.dt+uav.J*W_dot) - y_cl(:,1:6)*theta2(1:6)
                     if iteration > obj.N
@@ -187,9 +188,8 @@ classdef controller
                             obj.sigma_M_hat_array(:,i) = obj.sigma_M_hat_array(:,i+1);
                             obj.sigma_y_array(:,:,i) = obj.sigma_y_array(:,:,i+1);
                         end
-                        
-                        obj.sigma_M_hat_array(:,obj.N) = M_bar;
-                        obj.sigma_y_array(:,:,obj.N) = y_cl;
+                        obj.sigma_M_hat_array(:,obj.N) = M_bar_int;
+                        obj.sigma_y_array(:,:,obj.N) = y_icl_int;
 
                         x = zeros(8,1);
                         for i=2:obj.N
@@ -209,25 +209,14 @@ classdef controller
                         obj.sigma_y_array(:,:,obj.N) = y_cl;
                         obj.theta_hat_dot = -obj.gamma*Y'*(eW+obj.c2*eR);  
                     end
-                    obj.last_W5 = obj.last_W4;
-                    obj.last_W4 = obj.last_W3;
-                    obj.last_W3 = obj.last_W2;
-                    obj.last_W2 = obj.last_W;
+
+
                     obj.last_W = W_now;
-                    obj.last_f5 = obj.last_f4;
-                    obj.last_f4 = obj.last_f3;
-                    obj.last_f3 = obj.last_f2;
-                    obj.last_f2 = obj.last_f;
                     obj.last_f = f;
                     obj.last_R = R_now;
                     obj.theta = obj.theta + obj.theta_hat_dot ;
                     obj.M = -obj.kR * eR - obj.kW*eW + Y*obj.theta;
                     
-                    obj.last_M5 = obj.last_M4;
-                    obj.last_M4 = obj.last_M3;
-                    obj.last_M3 = obj.last_M2;
-                    obj.last_M2 = obj.last_M;
-                    obj.last_M = obj.M;
                     
                     
                 end
